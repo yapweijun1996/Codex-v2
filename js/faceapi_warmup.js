@@ -73,9 +73,17 @@ const consistencyThreshold = 0.6; // max allowed distance from previous captures
 
 function showMessage(type, message) {
     const msgEl = document.getElementById('registrationMessage');
-    if (msgEl) {
-        msgEl.innerText = message;
-        msgEl.style.color = type === 'error' ? 'red' : 'green';
+    if (!msgEl) return;
+    msgEl.innerText = message;
+    switch (type) {
+        case 'error':
+            msgEl.style.color = 'red';
+            break;
+        case 'success':
+            msgEl.style.color = 'green';
+            break;
+        default:
+            msgEl.style.color = 'blue';
     }
 }
 
@@ -95,7 +103,14 @@ function isConsistentWithCurrentUser(descriptor) {
 }
 
 function isDuplicateAcrossUsers(descriptor) {
-    // Implement backend check if needed; local-only returns false
+    if (!descriptor || flatRegisteredDescriptors.length === 0) return false;
+    for (let i = 0; i < flatRegisteredDescriptors.length; i++) {
+        const dist = faceapi.euclideanDistance(descriptor, flatRegisteredDescriptors[i]);
+        const meta = flatRegisteredUserMeta[i] || {};
+        if (meta.id !== currentUserId && dist < duplicateThreshold) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -133,13 +148,14 @@ function drawRegistrationOverlay(detection) {
 
 async function camera_start() {
 	var video = document.getElementById(videoId);
-	try {
-		var stream = await navigator.mediaDevices.getUserMedia({ video: true });
-		video.srcObject = stream;
-	} catch (error) {
-		console.error('Error accessing webcam:', error);
-		alert('Unable to access camera. Please check permissions. ' + error.name + ': ' + error.message);
-	}
+        try {
+                var stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+        } catch (error) {
+                console.error('Error accessing webcam:', error);
+                showMessage('error', 'Unable to access camera: ' + error.message);
+                alert('Unable to access camera. Please check permissions. ' + error.name + ': ' + error.message);
+        }
 }
 
 async function camera_stop() {
@@ -473,6 +489,7 @@ function faceapi_register(descriptor) {
         // Check if registration is complete
         if (currentUserDescriptors.length >= maxCaptures) {
             alert("Registration completed for user: " + currentUserName + " (" + currentUserId + ")");
+            showMessage('success', `Registration completed for ${currentUserName} (${currentUserId}).`);
             registrationCompleted = true;
             faceapi_action = null;
             camera_stop();
@@ -578,10 +595,12 @@ async function initWorkerAddEventListener() {
 						faceapi_verify(dets[0].descriptor);
 					}
 				} else if (faceapi_action === "register") {
-					// Handle registration timeout
-					if (registrationStartTime === null) {
-						registrationStartTime = Date.now();
-					}
+                                        // Handle registration timeout
+                                        if (registrationStartTime === null) {
+                                                registrationStartTime = Date.now();
+                                                showMessage('info', 'Registration started.');
+                                                updateRegistrationProgress();
+                                        }
 					if (Date.now() - registrationStartTime > registrationTimeout) {
 						showMessage('error', 'Registration timed out. Please try again.');
 						faceapi_action = null;
