@@ -76,6 +76,12 @@ function showMessage(type, message) {
     if (msgEl) {
         msgEl.innerText = message;
         msgEl.style.color = type === 'error' ? 'red' : 'green';
+        if (msgEl._hideTimer) {
+            clearTimeout(msgEl._hideTimer);
+        }
+        msgEl._hideTimer = setTimeout(() => {
+            msgEl.innerText = '';
+        }, 5000);
     }
 }
 
@@ -223,7 +229,7 @@ async function handleJsonFileInput(event) {
         }
     }
     if (errorFiles.length > 0) {
-        showMessage('error', 'Failed to load: ' + errorFiles.join(', '));
+        showMessage('error', 'Failed to load: ' + errorFiles.join(', ') + '. Check the file format and try again.');
     }
     if (allUsers.length > 0) {
         await load_face_descriptor_json(JSON.stringify(allUsers), true);
@@ -265,7 +271,7 @@ async function load_face_descriptor_json(warmupFaceDescriptorJson, merge = false
         camera_start();
         video_face_detection();
     } catch (error) {
-        showMessage('error', 'Error loading face descriptors: ' + error.message);
+        showMessage('error', 'Error loading face descriptors: ' + error.message + '. Please verify the JSON structure.');
     }
 }
 
@@ -669,19 +675,19 @@ async function initWorkerAddEventListener() {
 						registrationStartTime = Date.now();
 					}
 					if (Date.now() - registrationStartTime > registrationTimeout) {
-						showMessage('error', 'Registration timed out. Please try again.');
+                                                showMessage('error', 'Registration timed out. Ensure you are well lit and try again.');
 						faceapi_action = null;
 						camera_stop();
 						registrationCompleted = true;
 					} else if (dets.length !== 1) {
-						showMessage('error', 'Please ensure only one face is visible for registration.');
+                                                showMessage('error', 'Multiple faces detected. Please ensure only your face is visible.');
 					} else {
 						const descriptor = dets[0].descriptor;
 						// Check for duplicates across existing users
 						if (isDuplicateAcrossUsers(descriptor)) {
-							showMessage('error', 'This face is already registered.');
+                                                        showMessage('error', 'This face appears already registered. Restart if this is incorrect.');
 						} else if (!isConsistentWithCurrentUser(descriptor)) {
-							showMessage('error', 'Face too different from previous captures.');
+                                                        showMessage('error', 'Face differs from previous captures. Hold still and keep lighting consistent.');
 						} else {
 							showMessage('success', 'Face capture accepted.');
 							faceapi_register(descriptor);
