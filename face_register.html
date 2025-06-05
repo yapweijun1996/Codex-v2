@@ -161,13 +161,24 @@
                                        object-fit:cover;
                                }
 
-                               #capturePreview img{
+                               #capturePreview{
+                                       display:flex;
+                                       flex-wrap:wrap;
+                                       gap:4px;
+                                       margin-bottom:10px;
+                                       max-width:100%;
+                                       overflow-x:auto;
+                               }
+                               .capture-thumb{
                                        width:64px;
                                        height:64px;
                                        object-fit:cover;
                                        border:1px solid #ccc;
                                        border-radius:4px;
+                                       opacity:0;
+                                       transition:opacity 0.3s ease;
                                }
+                               .capture-thumb.show{ opacity:1; }
                        }
 
                        #orientationOverlay{
@@ -182,6 +193,35 @@
                                padding:1rem;
                                z-index:9999;
                                font-size:1.2rem;
+                       }
+
+                       #permissionOverlay{
+                               position:fixed;
+                               inset:0;
+                               background:rgba(0,0,0,0.85);
+                               color:white;
+                               display:none;
+                               justify-content:center;
+                               align-items:center;
+                               text-align:center;
+                               padding:1rem;
+                               z-index:10001;
+                               font-size:1.2rem;
+                       }
+
+                       #loadingOverlay{
+                               position:fixed;
+                               inset:0;
+                               background:rgba(0,0,0,0.85);
+                               color:white;
+                               display:flex;
+                               justify-content:center;
+                               align-items:center;
+                               text-align:center;
+                               z-index:10000;
+                               font-size:1.2rem;
+                               opacity:1;
+                               transition: opacity 0.5s ease;
                        }
 
                        /* Touch-friendly buttons */
@@ -205,6 +245,23 @@
                                transform:scale(0.97);
                        }
 
+                       #progressBar{
+                               width:100%;
+                               background:#eee;
+                               height:8px;
+                               border-radius:4px;
+                               overflow:hidden;
+                               margin:4px 0;
+                               flex:1 0 100%;
+                       }
+
+                       #progressFill{
+                               width:0;
+                               height:100%;
+                               background:#4CAF50;
+                               transition:width 0.3s ease;
+                       }
+
                        @media(max-width:768px){
                                .ctrl-btn{
                                        flex:1 0 100%;
@@ -223,15 +280,31 @@
 		<script src="./js/face-api.min.js"></script>
 		<!-- Then load the warm-up helper that depends on face-api -->
 		<script src="./js/faceapi_warmup.js"></script>
-		<script>
-			function urlReplace(url) {
-				window.location.replace(url); 
-			}
-		</script>
-	</head>
+               <script>
+                        function urlReplace(url) {
+                                window.location.replace(url);
+                        }
+                       function hideLoadingOverlay(){
+                               const el = document.getElementById('loadingOverlay');
+                               if(el){
+                                       el.style.opacity = '0';
+                                       setTimeout(() => { el.style.display = 'none'; }, 500);
+                               }
+                       }
+
+                       function showPermissionOverlay(){
+                               const el = document.getElementById('permissionOverlay');
+                               if(el){
+                                       el.style.display = 'flex';
+                               }
+                       }
+               </script>
+        </head>
         <body>
-                <div id="orientationOverlay">Please rotate your device to portrait orientation for best results.</div>
-                <h1>Face Detection</h1>
+               <div id="loadingOverlay">Loading face detection models...</div>
+               <div id="orientationOverlay">Please rotate your device to portrait orientation for best results.</div>
+               <div id="permissionOverlay">Camera access is required. Please grant permission or open this page in a supported browser.</div>
+               <h1>Face Detection</h1>
 		<a href="#" onclick="urlReplace('index.html')">Go to Index</a><br>
 		<!-- Add user ID and name inputs -->
 		<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
@@ -240,22 +313,35 @@
                 <p id="tips" style="margin-top:10px;color:#555;font-size:0.9rem;">Keep your face centered and move slowly.</p>
                <div id="progressContainer" class="controls">
                         <span id="progressText">0/20 captures</span>
+                        <div id="progressBar"><div id="progressFill"></div></div>
                         <button id="retakeBtn" class="ctrl-btn" style="display:none;">Retake Last</button>
                         <button id="restartBtn" class="ctrl-btn" style="display:none;">Restart</button>
                         <button id="cancelBtn" class="ctrl-btn">Cancel</button>
+                        <button id="exportBtn" onclick="exportRegistrations()" class="ctrl-btn" style="display:none;">Export Saved</button>
                 </div>
-                <div id="capturePreview" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;"></div>
-		<script>
+                <div id="capturePreview"></div>
+                <script>
 			function getParam(name) {
 				const params = new URLSearchParams(window.location.search);
 				return params.get(name);
 			}
-                        document.addEventListener('DOMContentLoaded', () => {
+                        document.addEventListener('DOMContentLoaded', async () => {
                                 const defId = getParam('userid') || 'test001';
                                 const defName = getParam('username') || 'test';
                                 document.getElementById('userIdInput').value = defId;
                                 document.getElementById('userNameInput').value = defName;
                                 checkOrientation();
+                                if (typeof getAllRegistrations === 'function') {
+                                        try {
+                                                const entries = await getAllRegistrations();
+                                                if (entries && entries.length > 0) {
+                                                        const btn = document.getElementById('exportBtn');
+                                                        if (btn) btn.style.display = 'inline-block';
+                                                }
+                                        } catch (err) {
+                                                console.warn('Failed to read saved registrations', err);
+                                        }
+                                }
                         });
 
                         function checkOrientation(){
@@ -310,7 +396,7 @@
 			 * ================================
 			 */
 			var faceapi_action = "register"; // verify, register
-			var warmup_completed = [camera_start, video_face_detection];
+                       var warmup_completed = [hideLoadingOverlay, camera_start, video_face_detection];
 			var face_detector_options_setup = {
 				inputSize: 128,
 				scoreThreshold: 0.75, // 0.8 = 80%
