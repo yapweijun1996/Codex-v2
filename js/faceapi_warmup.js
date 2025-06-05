@@ -79,6 +79,58 @@ function showMessage(type, message) {
     }
 }
 
+function updateProgress() {
+    const el = document.getElementById('progressText');
+    if (el) {
+        el.innerText = `${currentUserDescriptors.length}/${maxCaptures} captures`;
+    }
+    const show = currentUserDescriptors.length > 0;
+    const retake = document.getElementById('retakeBtn');
+    const restart = document.getElementById('restartBtn');
+    if (retake) retake.style.display = show ? 'inline-block' : 'none';
+    if (restart) restart.style.display = show ? 'inline-block' : 'none';
+}
+
+function addCapturePreview(imageData) {
+    if (!imageData) return;
+    const preview = document.getElementById('capturePreview');
+    if (!preview) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = imageData.width;
+    canvas.height = imageData.height;
+    canvas.getContext('2d').putImageData(imageData, 0, 0);
+    const img = document.createElement('img');
+    img.src = canvas.toDataURL();
+    preview.appendChild(img);
+}
+
+function retakeLastCapture() {
+    if (currentUserDescriptors.length === 0) return;
+    currentUserDescriptors.pop();
+    capturedFrames.pop();
+    const preview = document.getElementById('capturePreview');
+    if (preview && preview.lastChild) preview.removeChild(preview.lastChild);
+    updateProgress();
+}
+
+function restartRegistration() {
+    currentUserDescriptors = [];
+    capturedFrames = [];
+    const preview = document.getElementById('capturePreview');
+    if (preview) preview.innerHTML = '';
+    registrationStartTime = null;
+    registrationCompleted = false;
+    faceapi_action = 'register';
+    updateProgress();
+    camera_start();
+}
+
+function cancelRegistration() {
+    camera_stop();
+    faceapi_action = null;
+    registrationCompleted = true;
+}
+
 function isConsistentWithCurrentUser(descriptor) {
     if (currentUserDescriptors.length === 0) return true;
     return currentUserDescriptors.every(refDesc =>
@@ -422,6 +474,32 @@ var registrationCompleted = false;
 var verificationCompleted = false;
 var registrationStartTime = null;
 var registrationTimeout = 1 * 60 * 1000; // 1 minute
+var capturedFrames = [];
+var lastFaceImageData = null;
+
+async function openDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('FaceRegDB', 1);
+        request.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('users')) {
+                db.createObjectStore('users', { keyPath: 'id' });
+            }
+        };
+        request.onsuccess = e => resolve(e.target.result);
+        request.onerror = e => reject(e.target.error);
+    });
+}
+
+async function saveRegistration(userData) {
+    try {
+        const db = await openDatabase();
+        const tx = db.transaction('users', 'readwrite');
+        tx.objectStore('users').put(userData);
+    } catch (err) {
+        console.error('IndexedDB error', err);
+    }
+}
 
 function faceapi_register(descriptor) {
     if (!descriptor || registrationCompleted) {
@@ -457,6 +535,11 @@ function faceapi_register(descriptor) {
     }
     if (accept) {
         currentUserDescriptors.push(descriptor);
+        if (lastFaceImageData) {
+            capturedFrames.push(lastFaceImageData);
+            addCapturePreview(lastFaceImageData);
+        }
+        updateProgress();
         // Reset attempt tracking
         currentRegistrationAttempt = 0;
         bestCandidateDescriptor = null;
@@ -473,6 +556,7 @@ function faceapi_register(descriptor) {
                 name: currentUserName,
                 descriptors: [ Array.from(desc) ]
             }));
+            saveRegistration({ id: currentUserId, name: currentUserName, descriptors: currentUserDescriptors.map(d => Array.from(d)) });
             // Trigger download of per-capture JSON
             const jsonData = JSON.stringify(downloadData, null, 2);
             const blob = new Blob([jsonData], { type: 'application/json' });
@@ -494,6 +578,11 @@ function faceapi_register(descriptor) {
             registeredDescriptors = flatRegisteredDescriptors;
             // Reset for next registration if needed
             currentUserDescriptors = [];
+            capturedFrames = [];
+            lastFaceImageData = null;
+            const preview = document.getElementById('capturePreview');
+            if (preview) preview.innerHTML = '';
+            updateProgress();
         }
     }
 }
@@ -558,7 +647,9 @@ async function initWorkerAddEventListener() {
 			console.log(event.data.data.detections);
 			
 			
-			const dets = event.data.data.detections[0];
+                        const dets = event.data.data.detections[0];
+                        lastFaceImageData = event.data.data.detections[1] && event.data.data.detections[1][0];
+                        drawImageDataToCanvas(event.data.data.detections, canvasOutputId);
 			if (Array.isArray(dets) && dets.length > 0) {
 				if (faceapi_action === "verify") {
 					if (multiple_face_detection_yn === "y") {
@@ -814,6 +905,13 @@ document.addEventListener("DOMContentLoaded", async function(event) {
         console.warn("Service Worker or OffscreenCanvas not available; using main thread");
         await startInMainThread();
     }
+    updateProgress();
+    const retake = document.getElementById('retakeBtn');
+    const restart = document.getElementById('restartBtn');
+    const cancel = document.getElementById('cancelBtn');
+    if (retake) retake.addEventListener('click', retakeLastCapture);
+    if (restart) restart.addEventListener('click', restartRegistration);
+    if (cancel) cancel.addEventListener('click', cancelRegistration);
 });
 
 // Add multi-face drawing utilities

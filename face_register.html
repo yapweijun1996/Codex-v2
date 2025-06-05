@@ -156,12 +156,20 @@
 }
 
 .overlay{
-	width:100%;
-	height:100%;
-	object-fit:cover;
+        width:100%;
+        height:100%;
+        object-fit:cover;
 }
-			}
-		</style>
+
+#capturePreview img{
+        width:64px;
+        height:64px;
+        object-fit:cover;
+        border:1px solid #ccc;
+        border-radius:4px;
+}
+                        }
+                </style>
 		
 		<!-- Load face-api core library first -->
 		<script src="./js/face-api.min.js"></script>
@@ -179,7 +187,15 @@
 		<!-- Add user ID and name inputs -->
 		<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
 		<label>User Name: <input type="text" id="userNameInput" placeholder="Enter user name"></label><br>
-		<div id="registrationMessage" style="color:red; margin-top:10px;"></div>
+                <div id="registrationMessage" style="color:red; margin-top:10px;"></div>
+                <p id="tips" style="margin-top:10px;color:#555;font-size:0.9rem;">Keep your face centered and move slowly.</p>
+                <div id="progressContainer" style="margin:10px 0;">
+                        <span id="progressText">0/20 captures</span>
+                        <button id="retakeBtn" style="display:none;margin-left:10px;">Retake Last</button>
+                        <button id="restartBtn" style="display:none;margin-left:10px;">Restart</button>
+                        <button id="cancelBtn" style="margin-left:10px;">Cancel</button>
+                </div>
+                <div id="capturePreview" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;"></div>
 		<script>
 			function getParam(name) {
 				const params = new URLSearchParams(window.location.search);
