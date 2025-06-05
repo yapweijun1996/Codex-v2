@@ -211,7 +211,13 @@
                                        margin-top:0.5rem;
                                }
                        }
-                        </style>
+
+                       #registrationMessage{
+                               margin-top:10px;
+                               font-size:0.9rem;
+                               min-height:1.2em;
+                       }
+                       </style>
 		
 		<!-- Load face-api core library first -->
 		<script src="./js/face-api.min.js"></script>
@@ -230,7 +236,7 @@
 		<!-- Add user ID and name inputs -->
 		<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
 		<label>User Name: <input type="text" id="userNameInput" placeholder="Enter user name"></label><br>
-                <div id="registrationMessage" style="color:red; margin-top:10px;"></div>
+                <div id="registrationMessage"></div>
                 <p id="tips" style="margin-top:10px;color:#555;font-size:0.9rem;">Keep your face centered and move slowly.</p>
                <div id="progressContainer" class="controls">
                         <span id="progressText">0/20 captures</span>

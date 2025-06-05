@@ -10,6 +10,6 @@
 - [x] Large touch-friendly buttons for capture and controls
 - [x] Option to cancel or restart registration from the page
 - [x] Preview captured frames so users can confirm quality
-- [ ] Improve error messages with specific instructions when registration fails
+- [x] Improve error messages with specific instructions when registration fails
 - [x] Consider storing registrations locally with IndexedDB for offline flow
 
