@@ -332,39 +332,45 @@ async function unregisterAllServiceWorker() {
  * @param {string} canvasId - ID of the canvas to draw the snapshot on.
  */
 async function drawImageDataToCanvas(detections, canvasId) {
-    var canvas = document.getElementById(canvasId);
-    var context = canvas.getContext("2d");
+    const canvas = document.getElementById(canvasId);
+    const context = canvas.getContext("2d");
 
-    // Check if detections have faces
-    if (Array.isArray(detections) && detections.length > 0) {
-        const imageData = detections[1][0]; // Assuming imageData is part of detections
-		var confidence = 0;
-		
-		if (detections.length > 0 && detections[0].length > 0) {
-			if(detections[0][0].detection._score !== "undefined"){
-				confidence = detections[0][0].detection._score;
-			}
-			if(confidence != 0){
-				confidence = confidence * 100;
-			}
-		}
-		console.log(confidence);
-
-        // Set canvas dimensions to match the imageData
-        canvas.width = imageData.width;
-        canvas.height = imageData.height;
-
-        // Draw the first ImageData onto the canvas at position (0, 0)
-        context.putImageData(imageData, 0, 0);
-		
-		// Display confidence percentage
-        context.font = '20px Arial';
-        context.fillStyle = 'white'; // Color for text
-        context.fillText(`Confidence: ${confidence.toFixed(2)}%`, 10, 30); // Fixed to 2 decimal places
-
-    } else {
+    // Expect [results, imageDataArray]; guard against invalid shapes
+    if (!Array.isArray(detections) || detections.length < 2) {
         console.log('No image data to draw');
+        return;
     }
+
+    const results = detections[0];
+    const images = detections[1];
+
+    if (!Array.isArray(images) || images.length === 0) {
+        console.log('No image data to draw');
+        return;
+    }
+
+    const imageData = images[0];
+
+    // Determine confidence if available
+    let confidence = 0;
+    if (Array.isArray(results) && results.length > 0 && results[0] && results[0].detection) {
+        const score = results[0].detection._score;
+        if (typeof score === 'number') {
+            confidence = score * 100;
+        }
+    }
+
+    // Set canvas dimensions to match the imageData
+    canvas.width = imageData.width;
+    canvas.height = imageData.height;
+
+    // Draw the ImageData onto the canvas
+    context.putImageData(imageData, 0, 0);
+
+    // Display confidence percentage
+    context.font = '20px Arial';
+    context.fillStyle = 'white';
+    context.fillText(`Confidence: ${confidence.toFixed(2)}%`, 10, 30);
 }
 
 /* Overlay Canvas Elements:
