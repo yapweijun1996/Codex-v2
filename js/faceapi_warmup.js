@@ -60,45 +60,60 @@ var flatRegisteredUserMeta = [];
 // Flag to allow multiple face detection ("y" = allow multiple, else single)
 var multiple_face_detection_yn = "y";
 
-function saveProgress() {
-    try {
-        const data = {
-            id: currentUserId,
-            name: currentUserName,
-            descriptors: currentUserDescriptors.map(d => Array.from(d)),
-            frames: capturedFrames
+async function openProgressDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('FaceRegProgressDB', 1);
+        request.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('progress')) {
+                db.createObjectStore('progress', { keyPath: 'id' });
+            }
         };
-        localStorage.setItem('faceRegProgress', JSON.stringify(data));
-    } catch (e) {
-        console.warn('Failed to save progress', e);
-    }
+        request.onsuccess = e => resolve(e.target.result);
+        request.onerror = e => reject(e.target.error);
+    });
+}
+
+function saveProgress() {
+    const data = {
+        id: currentUserId,
+        name: currentUserName,
+        descriptors: currentUserDescriptors.map(d => Array.from(d)),
+        frames: capturedFrames
+    };
+    openProgressDB().then(db => {
+        const tx = db.transaction('progress', 'readwrite');
+        tx.objectStore('progress').put({ id: 'current', data });
+    }).catch(e => console.warn('Failed to save progress', e));
 }
 
 function loadProgress() {
-    try {
-        const raw = localStorage.getItem('faceRegProgress');
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        if (!data || !Array.isArray(data.descriptors)) return;
-        currentUserId = data.id || '';
-        currentUserName = data.name || '';
-        currentUserDescriptors = data.descriptors.map(arr => new Float32Array(arr));
-        capturedFrames = Array.isArray(data.frames) ? data.frames : [];
-        const idInput = document.getElementById('userIdInput');
-        const nameInput = document.getElementById('userNameInput');
-        if (idInput) idInput.value = currentUserId;
-        if (nameInput) nameInput.value = currentUserName;
-        capturedFrames.forEach(url => addCapturePreview(url));
-        updateProgress();
-    } catch (e) {
-        console.warn('Failed to load progress', e);
-    }
+    openProgressDB().then(db => {
+        const tx = db.transaction('progress', 'readonly');
+        const req = tx.objectStore('progress').get('current');
+        req.onsuccess = () => {
+            const record = req.result;
+            if (!record || !record.data || !Array.isArray(record.data.descriptors)) return;
+            const data = record.data;
+            currentUserId = data.id || '';
+            currentUserName = data.name || '';
+            currentUserDescriptors = data.descriptors.map(arr => new Float32Array(arr));
+            capturedFrames = Array.isArray(data.frames) ? data.frames : [];
+            const idInput = document.getElementById('userIdInput');
+            const nameInput = document.getElementById('userNameInput');
+            if (idInput) idInput.value = currentUserId;
+            if (nameInput) nameInput.value = currentUserName;
+            capturedFrames.forEach(url => addCapturePreview(url));
+            updateProgress();
+        };
+    }).catch(e => console.warn('Failed to load progress', e));
 }
 
 function clearProgress() {
-    try {
-        localStorage.removeItem('faceRegProgress');
-    } catch (e) {}
+    openProgressDB().then(db => {
+        const tx = db.transaction('progress', 'readwrite');
+        tx.objectStore('progress').delete('current');
+    }).catch(() => {});
 }
 
 // Adjust detection options for low-end devices
@@ -598,64 +613,6 @@ var registrationTimeout = 1 * 60 * 1000; // 1 minute
 var capturedFrames = [];
 var lastFaceImageData = null;
 
-async function openDatabase() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('FaceRegDB', 1);
-        request.onupgradeneeded = e => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('users')) {
-                db.createObjectStore('users', { keyPath: 'id' });
-            }
-        };
-        request.onsuccess = e => resolve(e.target.result);
-        request.onerror = e => reject(e.target.error);
-    });
-}
-
-async function saveRegistration(userData) {
-    try {
-        const db = await openDatabase();
-        const tx = db.transaction('users', 'readwrite');
-        tx.objectStore('users').put(userData);
-    } catch (err) {
-        console.error('IndexedDB error', err);
-    }
-}
-
-async function getAllRegistrations() {
-    try {
-        const db = await openDatabase();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction('users', 'readonly');
-            const req = tx.objectStore('users').getAll();
-            req.onsuccess = () => resolve(req.result || []);
-            req.onerror = e => reject(e.target.error);
-        });
-    } catch (err) {
-        console.error('IndexedDB read error', err);
-        return [];
-    }
-}
-
-async function exportRegistrations() {
-    try {
-        const entries = await getAllRegistrations();
-        if (!entries || entries.length === 0) {
-            alert('No saved registrations to export.');
-            return;
-        }
-        const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'offline_registrations.json';
-        a.click();
-        URL.revokeObjectURL(url);
-    } catch (err) {
-        console.error('Export failed', err);
-    }
-}
-
 function faceapi_register(descriptor) {
     if (!descriptor || registrationCompleted) {
         return;
@@ -723,7 +680,6 @@ function faceapi_register(descriptor) {
                     Array.from(meanDescriptor)
                 ]
             }];
-            saveRegistration(downloadData[0]);
             // Trigger download of per-capture JSON
             const jsonData = JSON.stringify(downloadData, null, 2);
             const blob = new Blob([jsonData], { type: 'application/json' });
