@@ -7,8 +7,8 @@
 - [ ] Responsive layout updates for small screen/mobile devices
 - [x] Detect device orientation and prompt users to rotate to portrait
 - [x] Use full-screen overlay to focus camera feed on mobile
-- [ ] Large touch-friendly buttons for capture and controls
-- [ ] Option to cancel or restart registration from the page
+- [x] Large touch-friendly buttons for capture and controls
+- [x] Option to cancel or restart registration from the page
 - [ ] Preview captured frames so users can confirm quality
 - [ ] Improve error messages with specific instructions when registration fails
 - [ ] Consider storing registrations locally with IndexedDB for offline flow
