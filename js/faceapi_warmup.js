@@ -132,7 +132,7 @@ function adjustDetectionForDevice() {
 }
 
 // Similarity filtering settings for registration
-var registrationSimilarityThreshold = 0.10; // minimum Euclidean distance to accept new capture
+var registrationSimilarityThreshold = 0.15; // minimum Euclidean distance to accept new capture
 var maxRegistrationAttempts = 20;            // maximum attempts per descriptor slot
 var currentRegistrationAttempt = 0;          // attempt counter for current slot
 var bestCandidateDescriptor = null;          // best diverse descriptor seen so far
@@ -142,7 +142,7 @@ var registrationAttemptDistances = [];
 
 // Add helper functions for improved registration checks and feedback
 const duplicateThreshold = 0.3; // threshold for duplicate across users; local-only
-const consistencyThreshold = 0.6; // max allowed distance from previous captures
+const consistencyThreshold = 0.3; // max allowed distance from previous captures
 
 function showMessage(type, message) {
     const msgEl = document.getElementById('registrationMessage');
