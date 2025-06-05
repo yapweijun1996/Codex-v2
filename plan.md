@@ -24,4 +24,4 @@
 
 ## Upcoming
 
-- [ ] Allow uploading existing face JSON files on the registration page so duplicates are checked during enrollment.
+- [x] Allow uploading existing face JSON files on the registration page so duplicates are checked during enrollment.

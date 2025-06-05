@@ -309,7 +309,9 @@
 		<!-- Add user ID and name inputs -->
 		<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
                 <label>User Name: <input type="text" id="userNameInput" placeholder="Enter user name"></label><br>
-                <input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple><br>
+                <label>Load Face JSONs:
+                        <input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
+                </label><br>
                 <div id="registrationMessage"></div>
                 <p id="tips" style="margin-top:10px;color:#555;font-size:0.9rem;">Keep your face centered and move slowly.</p>
                <div id="progressContainer" class="controls">
