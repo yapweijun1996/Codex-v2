@@ -20,10 +20,9 @@
 			body {
 				font-family: Arial, sans-serif;
 				background-color: #f4f4f9;
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				height: 100vh;
+                               display: flex;
+                               align-items: center;
+                               height: 100vh;
 				flex-direction: column;
 				color: #333;
 			}
@@ -224,6 +223,29 @@
                                transition: opacity 0.5s ease;
                        }
 
+                       #instructionsOverlay{
+                               position:fixed;
+                               inset:0;
+                               background:rgba(0,0,0,0.85);
+                               color:white;
+                               display:none;
+                               justify-content:center;
+                               align-items:center;
+                               text-align:center;
+                               padding:1rem;
+                               z-index:10002;
+                               font-size:1.2rem;
+                       }
+                       #instructionsOverlay button{
+                               margin-top:1rem;
+                               padding:12px 16px;
+                               font-size:1rem;
+                               border:none;
+                               border-radius:6px;
+                               background:#4CAF50;
+                               color:#fff;
+                       }
+
                        /* Touch-friendly buttons */
                        .controls{
                                display:flex;
@@ -233,9 +255,18 @@
                                justify-content:center;
                                align-items:center;
                        }
+                       #progressContainer{
+                               position:fixed;
+                               bottom:0;
+                               left:0;
+                               width:100%;
+                               background:rgba(255,255,255,0.9);
+                               box-shadow:0 -2px 4px rgba(0,0,0,0.1);
+                               padding:0.5rem;
+                        }
                        .ctrl-btn{
-                               padding:12px 16px;
-                               font-size:1rem;
+                               padding:14px 18px;
+                               font-size:1.1rem;
                                border:none;
                                border-radius:6px;
                                background:#4CAF50;
@@ -298,12 +329,34 @@
                                        el.style.display = 'flex';
                                }
                        }
+
+                       function showInstructions(){
+                               const el = document.getElementById('instructionsOverlay');
+                               if(el){
+                                       el.style.display = 'flex';
+                               }
+                       }
+                       function hideInstructions(){
+                               const el = document.getElementById('instructionsOverlay');
+                               if(el){
+                                       el.style.display = 'none';
+                                       localStorage.setItem('instructionsShown','1');
+                               }
+                       }
                </script>
         </head>
         <body>
                <div id="loadingOverlay">Loading face detection models...</div>
                <div id="orientationOverlay">Please rotate your device to portrait orientation for best results.</div>
                <div id="permissionOverlay">Camera access is required. Please grant permission or open this page in a supported browser.</div>
+               <div id="instructionsOverlay">
+                       <div>
+                               <p>Step 1: Position your face within the frame.</p>
+                               <p>Step 2: Slowly turn your head left and right.</p>
+                               <p>Step 3: Tap capture when ready.</p>
+                               <button onclick="hideInstructions()">Got it</button>
+                       </div>
+               </div>
                <h1>Face Detection</h1>
 		<a href="#" onclick="urlReplace('index.html')">Go to Index</a><br>
 		<!-- Add user ID and name inputs -->
@@ -331,6 +384,9 @@
                                 document.getElementById('userIdInput').value = defId;
                                 document.getElementById('userNameInput').value = defName;
                                 checkOrientation();
+                                if(!localStorage.getItem('instructionsShown')){
+                                        showInstructions();
+                                }
                         });
 
                         function checkOrientation(){
