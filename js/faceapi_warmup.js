@@ -73,9 +73,17 @@ const consistencyThreshold = 0.6; // max allowed distance from previous captures
 
 function showMessage(type, message) {
     const msgEl = document.getElementById('registrationMessage');
-    if (msgEl) {
-        msgEl.innerText = message;
-        msgEl.style.color = type === 'error' ? 'red' : 'green';
+    if (!msgEl) return;
+    msgEl.innerText = message;
+    switch (type) {
+        case 'error':
+            msgEl.style.color = 'red';
+            break;
+        case 'success':
+            msgEl.style.color = 'green';
+            break;
+        default:
+            msgEl.style.color = 'blue';
     }
 }
 
@@ -133,13 +141,14 @@ function drawRegistrationOverlay(detection) {
 
 async function camera_start() {
 	var video = document.getElementById(videoId);
-	try {
-		var stream = await navigator.mediaDevices.getUserMedia({ video: true });
-		video.srcObject = stream;
-	} catch (error) {
-		console.error('Error accessing webcam:', error);
-		alert('Unable to access camera. Please check permissions. ' + error.name + ': ' + error.message);
-	}
+        try {
+                var stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+        } catch (error) {
+                console.error('Error accessing webcam:', error);
+                showMessage('error', 'Unable to access camera: ' + error.message);
+                alert('Unable to access camera. Please check permissions. ' + error.name + ': ' + error.message);
+        }
 }
 
 async function camera_stop() {
@@ -473,6 +482,7 @@ function faceapi_register(descriptor) {
         // Check if registration is complete
         if (currentUserDescriptors.length >= maxCaptures) {
             alert("Registration completed for user: " + currentUserName + " (" + currentUserId + ")");
+            showMessage('success', `Registration completed for ${currentUserName} (${currentUserId}).`);
             registrationCompleted = true;
             faceapi_action = null;
             camera_stop();
@@ -578,10 +588,12 @@ async function initWorkerAddEventListener() {
 						faceapi_verify(dets[0].descriptor);
 					}
 				} else if (faceapi_action === "register") {
-					// Handle registration timeout
-					if (registrationStartTime === null) {
-						registrationStartTime = Date.now();
-					}
+                                        // Handle registration timeout
+                                        if (registrationStartTime === null) {
+                                                registrationStartTime = Date.now();
+                                                showMessage('info', 'Registration started.');
+                                                updateRegistrationProgress();
+                                        }
 					if (Date.now() - registrationStartTime > registrationTimeout) {
 						showMessage('error', 'Registration timed out. Please try again.');
 						faceapi_action = null;
@@ -590,16 +602,13 @@ async function initWorkerAddEventListener() {
 					} else if (dets.length !== 1) {
 						showMessage('error', 'Please ensure only one face is visible for registration.');
 					} else {
-						const descriptor = dets[0].descriptor;
-						// Check for duplicates across existing users
-						if (isDuplicateAcrossUsers(descriptor)) {
-							showMessage('error', 'This face is already registered.');
-						} else if (!isConsistentWithCurrentUser(descriptor)) {
-							showMessage('error', 'Face too different from previous captures.');
-						} else {
-							showMessage('success', 'Face capture accepted.');
-							faceapi_register(descriptor);
-						}
+                                                const descriptor = dets[0].descriptor;
+                                                if (!isConsistentWithCurrentUser(descriptor)) {
+                                                        showMessage('error', 'Face too different from previous captures.');
+                                                } else {
+                                                        showMessage('success', 'Face capture accepted.');
+                                                        faceapi_register(descriptor);
+                                                }
 					}
 				} else {
 					console.log("faceapi_action is NULL");

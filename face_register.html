@@ -195,13 +195,14 @@
 				const params = new URLSearchParams(window.location.search);
 				return params.get(name);
 			}
-			document.addEventListener('DOMContentLoaded', () => {
-				const defId = getParam('userid') || 'test001';
-				const defName = getParam('username') || 'test';
-				document.getElementById('userIdInput').value = defId;
-				document.getElementById('userNameInput').value = defName;
-			});
-		</script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                                const defId = getParam('userid') || 'test001';
+                                const defName = getParam('username') || 'test';
+                                document.getElementById('userIdInput').value = defId;
+                                document.getElementById('userNameInput').value = defName;
+                                updateRegistrationProgress();
+                        });
+                </script>
 		
 		<div class="face-detection-container"  style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
 			<div class="video-wrapper">
