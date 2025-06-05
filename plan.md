@@ -28,7 +28,6 @@
   - Each descriptor is exported individually so that the server or client can store them as needed.
 
 ## Next Steps
-- [ ] Implement real duplicate checking inside `isDuplicateAcrossUsers`.
-- [ ] Persist registered users/descriptors to backend storage instead of downloading a file client-side.
-- [ ] Improve user feedback for timeouts and errors.
-- [ ] Display a progress bar during registration so users know how many captures remain.
+- [x] Implement real duplicate checking inside `isDuplicateAcrossUsers`.
+- [x] Improve user feedback for timeouts and errors.
+- [x] Display a progress bar during registration so users know how many captures remain.
