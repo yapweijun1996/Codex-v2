@@ -122,6 +122,8 @@ var maxRegistrationAttempts = 20;            // maximum attempts per descriptor 
 var currentRegistrationAttempt = 0;          // attempt counter for current slot
 var bestCandidateDescriptor = null;          // best diverse descriptor seen so far
 var bestCandidateMinDist = 0;                // its distance
+// Track descriptor distances for calibration insight
+var registrationAttemptDistances = [];
 
 // Add helper functions for improved registration checks and feedback
 const duplicateThreshold = 0.3; // threshold for duplicate across users; local-only
@@ -207,8 +209,10 @@ function isConsistentWithCurrentUser(descriptor) {
 }
 
 function isDuplicateAcrossUsers(descriptor) {
-    // Implement backend check if needed; local-only returns false
-    return false;
+    if (!descriptor || flatRegisteredDescriptors.length === 0) return false;
+    return flatRegisteredDescriptors.some(ref =>
+        faceapi.euclideanDistance(descriptor, ref) < duplicateThreshold
+    );
 }
 
 // Check if descriptor matches current user's existing captures
@@ -216,6 +220,40 @@ function isRecognizedAsCurrentUser(descriptor) {
     return currentUserDescriptors.some(refDesc =>
         faceapi.euclideanDistance(descriptor, refDesc) < consistencyThreshold
     );
+}
+
+function isCaptureQualityHigh(detection) {
+    if (!detection || !detection.detection) return false;
+    const score = detection.detection._score || 0;
+    const box = detection.alignedRect && detection.alignedRect._box;
+    if (!box) return false;
+    const video = document.getElementById(videoId);
+    const minArea = (video.videoWidth * video.videoHeight) * 0.05; // at least 5% of frame
+    const area = box._width * box._height;
+    return score >= 0.5 && area >= minArea;
+}
+
+function computeMeanDescriptor(descriptors) {
+    if (!descriptors || descriptors.length === 0) return null;
+    const len = descriptors[0].length;
+    const mean = new Float32Array(len);
+    descriptors.forEach(desc => {
+        for (let i = 0; i < len; i++) {
+            mean[i] += desc[i];
+        }
+    });
+    for (let i = 0; i < len; i++) {
+        mean[i] /= descriptors.length;
+    }
+    return mean;
+}
+
+function logCalibrationSummary() {
+    if (registrationAttemptDistances.length === 0) return;
+    const sum = registrationAttemptDistances.reduce((a, b) => a + b, 0);
+    const avg = sum / registrationAttemptDistances.length;
+    console.log('Average registration distance:', avg.toFixed(3));
+    registrationAttemptDistances = [];
 }
 
 // Draw bounding box and label for registration/recognition overlay
@@ -635,6 +673,8 @@ function faceapi_register(descriptor) {
         // Compute minimum distance to existing descriptors
         const distances = currentUserDescriptors.map(d => faceapi.euclideanDistance(descriptor, d));
         const minDist = Math.min(...distances);
+        registrationAttemptDistances.push(minDist);
+        console.log('Registration distance:', minDist.toFixed(3));
         // Update best candidate if more distinct
         currentRegistrationAttempt++;
         if (minDist > bestCandidateMinDist) {
@@ -674,13 +714,16 @@ function faceapi_register(descriptor) {
             faceapi_action = null;
             camera_stop();
             clearProgress();
-            // Build one entry per captured descriptor
-            const downloadData = currentUserDescriptors.map(desc => ({
+            const meanDescriptor = computeMeanDescriptor(currentUserDescriptors);
+            const downloadData = [{
                 id: currentUserId,
                 name: currentUserName,
-                descriptors: [ Array.from(desc) ]
-            }));
-            saveRegistration({ id: currentUserId, name: currentUserName, descriptors: currentUserDescriptors.map(d => Array.from(d)) });
+                descriptors: [
+                    ...currentUserDescriptors.map(d => Array.from(d)),
+                    Array.from(meanDescriptor)
+                ]
+            }];
+            saveRegistration(downloadData[0]);
             // Trigger download of per-capture JSON
             const jsonData = JSON.stringify(downloadData, null, 2);
             const blob = new Blob([jsonData], { type: 'application/json' });
@@ -700,6 +743,7 @@ function faceapi_register(descriptor) {
                 });
             });
             registeredDescriptors = flatRegisteredDescriptors;
+            logCalibrationSummary();
             // Reset for next registration if needed
             currentUserDescriptors = [];
             capturedFrames = [];
@@ -791,20 +835,21 @@ async function initWorkerAddEventListener() {
 						faceapi_action = null;
 						camera_stop();
 						registrationCompleted = true;
-					} else if (dets.length !== 1) {
+                                        } else if (dets.length !== 1) {
                                                 showMessage('error', 'Multiple faces detected. Please ensure only your face is visible.');
-					} else {
-						const descriptor = dets[0].descriptor;
-						// Check for duplicates across existing users
-						if (isDuplicateAcrossUsers(descriptor)) {
+                                        } else {
+                                                const descriptor = dets[0].descriptor;
+                                                if (!isCaptureQualityHigh(dets[0])) {
+                                                        showMessage('error', 'Low-quality capture. Ensure good lighting and face the camera.');
+                                                } else if (isDuplicateAcrossUsers(descriptor)) {
                                                         showMessage('error', 'This face appears already registered. Restart if this is incorrect.');
-						} else if (!isConsistentWithCurrentUser(descriptor)) {
+                                                } else if (!isConsistentWithCurrentUser(descriptor)) {
                                                         showMessage('error', 'Face differs from previous captures. Hold still and keep lighting consistent.');
-						} else {
-							showMessage('success', 'Face capture accepted.');
-							faceapi_register(descriptor);
-						}
-					}
+                                                } else {
+                                                        showMessage('success', 'Face capture accepted.');
+                                                        faceapi_register(descriptor);
+                                                }
+                                        }
 				} else {
 					console.log("faceapi_action is NULL");
 				}
