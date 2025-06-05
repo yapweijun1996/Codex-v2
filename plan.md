@@ -21,3 +21,7 @@
 - [ ] Implement server-side API to upload stored registrations
 - [ ] Provide user feedback when offline or syncing fails
 - [ ] Option to clear local registrations after successful sync
+
+## Upcoming
+
+- [ ] Allow uploading existing face JSON files on the registration page so duplicates are checked during enrollment.
