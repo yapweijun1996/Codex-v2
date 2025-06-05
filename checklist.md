@@ -21,3 +21,8 @@
 - [x] Reject captures with low quality (blur, extreme angles, poor lighting).
 - [x] Log the distance between each attempt to refine thresholds.
 - [x] Verify new captures are unique across all users to prevent duplicates.
+
+## Planned Changes
+
+- [x] Move registration progress storage from `localStorage` to IndexedDB.
+- [x] Stop persisting completed registrations in IndexedDB and download them only.

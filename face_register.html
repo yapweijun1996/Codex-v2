@@ -317,7 +317,6 @@
                         <button id="retakeBtn" class="ctrl-btn" style="display:none;">Retake Last</button>
                         <button id="restartBtn" class="ctrl-btn" style="display:none;">Restart</button>
                         <button id="cancelBtn" class="ctrl-btn">Cancel</button>
-                        <button id="exportBtn" onclick="exportRegistrations()" class="ctrl-btn" style="display:none;">Export Saved</button>
                 </div>
                 <div id="capturePreview"></div>
                 <script>
@@ -331,17 +330,6 @@
                                 document.getElementById('userIdInput').value = defId;
                                 document.getElementById('userNameInput').value = defName;
                                 checkOrientation();
-                                if (typeof getAllRegistrations === 'function') {
-                                        try {
-                                                const entries = await getAllRegistrations();
-                                                if (entries && entries.length > 0) {
-                                                        const btn = document.getElementById('exportBtn');
-                                                        if (btn) btn.style.display = 'inline-block';
-                                                }
-                                        } catch (err) {
-                                                console.warn('Failed to read saved registrations', err);
-                                        }
-                                }
                         });
 
                         function checkOrientation(){
