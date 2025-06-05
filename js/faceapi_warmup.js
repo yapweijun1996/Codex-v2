@@ -28,7 +28,7 @@ var canvasId3 = "canvas3";
  * @type {string}
  */
 var canvasOutputId = "canvas_output";
-var step_fps = 125 ; // 1000 / 125 = 8 FPS
+var step_fps = 16.67 ; // 1000 / 16.67 = 60 FPS
 var vle_face_landmark_position_yn = "y" ; // y / n
 var vle_facebox_yn = "y" ; // y / n
 
