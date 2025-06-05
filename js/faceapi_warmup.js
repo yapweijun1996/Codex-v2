@@ -79,6 +79,14 @@ function showMessage(type, message) {
     }
 }
 
+function updateRegistrationProgress() {
+    const progressEl = document.getElementById('registrationProgress');
+    if (!progressEl) return;
+    progressEl.max = maxCaptures;
+    progressEl.value = currentUserDescriptors.length;
+    progressEl.style.display = 'block';
+}
+
 function isConsistentWithCurrentUser(descriptor) {
     if (currentUserDescriptors.length === 0) return true;
     return currentUserDescriptors.every(refDesc =>
@@ -457,6 +465,7 @@ function faceapi_register(descriptor) {
     }
     if (accept) {
         currentUserDescriptors.push(descriptor);
+        updateRegistrationProgress();
         // Reset attempt tracking
         currentRegistrationAttempt = 0;
         bestCandidateDescriptor = null;
@@ -467,6 +476,8 @@ function faceapi_register(descriptor) {
             registrationCompleted = true;
             faceapi_action = null;
             camera_stop();
+            const progressEl = document.getElementById('registrationProgress');
+            if (progressEl) progressEl.style.display = 'none';
             // Build one entry per captured descriptor
             const downloadData = currentUserDescriptors.map(desc => ({
                 id: currentUserId,
