@@ -76,22 +76,15 @@
 			}
 
 			/* Snapshot canvas shown next to video */
-                        .snapshot {
-                                border: 2px solid #333;
-                                background-color: rgba(255, 255, 255, 0.7);
-                                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                                display: none; /* toggled by JS */
-                                width: 640px;
-                                height: 480px;
-                                border-radius: 8px;
-                        }
-
-                        /* Progress bar styling */
-                        progress#registrationProgress {
-                                width: 100%;
-                                height: 20px;
-                                margin-top: 5px;
-                        }
+			.snapshot {
+				border: 2px solid #333;
+				background-color: rgba(255, 255, 255, 0.7);
+				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+				display: none; /* toggled by JS */
+				width: 640px;
+				height: 480px;
+				border-radius: 8px;
+			}
 
 			/* Responsive video */
 			@media (max-width: 768px) {
@@ -163,13 +156,12 @@
 }
 
 .overlay{
-        width:100%;
-        height:100%;
-        object-fit:cover;
+	width:100%;
+	height:100%;
+	object-fit:cover;
 }
-
-                        }
-                </style>
+			}
+		</style>
 		
 		<!-- Load face-api core library first -->
 		<script src="./js/face-api.min.js"></script>
@@ -187,22 +179,19 @@
 		<!-- Add user ID and name inputs -->
 		<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
 		<label>User Name: <input type="text" id="userNameInput" placeholder="Enter user name"></label><br>
-                <div id="registrationMessage" style="color:red; margin-top:10px;"></div>
-                <!-- Progress bar shows how many captures are accepted -->
-                <progress id="registrationProgress" max="20" value="0" style="display:none;"></progress>
+		<div id="registrationMessage" style="color:red; margin-top:10px;"></div>
 		<script>
 			function getParam(name) {
 				const params = new URLSearchParams(window.location.search);
 				return params.get(name);
 			}
-                        document.addEventListener('DOMContentLoaded', () => {
-                                const defId = getParam('userid') || 'test001';
-                                const defName = getParam('username') || 'test';
-                                document.getElementById('userIdInput').value = defId;
-                                document.getElementById('userNameInput').value = defName;
-                                updateRegistrationProgress();
-                        });
-                </script>
+			document.addEventListener('DOMContentLoaded', () => {
+				const defId = getParam('userid') || 'test001';
+				const defName = getParam('username') || 'test';
+				document.getElementById('userIdInput').value = defId;
+				document.getElementById('userNameInput').value = defName;
+			});
+		</script>
 		
 		<div class="face-detection-container"  style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
 			<div class="video-wrapper">
