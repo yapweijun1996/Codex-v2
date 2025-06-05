@@ -60,6 +60,62 @@ var flatRegisteredUserMeta = [];
 // Flag to allow multiple face detection ("y" = allow multiple, else single)
 var multiple_face_detection_yn = "y";
 
+function saveProgress() {
+    try {
+        const data = {
+            id: currentUserId,
+            name: currentUserName,
+            descriptors: currentUserDescriptors.map(d => Array.from(d)),
+            frames: capturedFrames
+        };
+        localStorage.setItem('faceRegProgress', JSON.stringify(data));
+    } catch (e) {
+        console.warn('Failed to save progress', e);
+    }
+}
+
+function loadProgress() {
+    try {
+        const raw = localStorage.getItem('faceRegProgress');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.descriptors)) return;
+        currentUserId = data.id || '';
+        currentUserName = data.name || '';
+        currentUserDescriptors = data.descriptors.map(arr => new Float32Array(arr));
+        capturedFrames = Array.isArray(data.frames) ? data.frames : [];
+        const idInput = document.getElementById('userIdInput');
+        const nameInput = document.getElementById('userNameInput');
+        if (idInput) idInput.value = currentUserId;
+        if (nameInput) nameInput.value = currentUserName;
+        capturedFrames.forEach(url => addCapturePreview(url));
+        updateProgress();
+    } catch (e) {
+        console.warn('Failed to load progress', e);
+    }
+}
+
+function clearProgress() {
+    try {
+        localStorage.removeItem('faceRegProgress');
+    } catch (e) {}
+}
+
+// Adjust detection options for low-end devices
+function adjustDetectionForDevice() {
+    try {
+        const mem = navigator.deviceMemory || 4;
+        const cores = navigator.hardwareConcurrency || 4;
+        if (mem <= 2 || cores <= 2) {
+            face_detector_options_setup.inputSize = 96;
+            // Increase threshold slightly for performance
+            face_detector_options_setup.scoreThreshold = Math.max(face_detector_options_setup.scoreThreshold || 0.5, 0.5);
+        }
+    } catch (err) {
+        console.warn('Device capability detection failed', err);
+    }
+}
+
 // Similarity filtering settings for registration
 var registrationSimilarityThreshold = 0.10; // minimum Euclidean distance to accept new capture
 var maxRegistrationAttempts = 20;            // maximum attempts per descriptor slot
@@ -90,6 +146,11 @@ function updateProgress() {
     if (el) {
         el.innerText = `${currentUserDescriptors.length}/${maxCaptures} captures`;
     }
+    const fill = document.getElementById('progressFill');
+    if (fill) {
+        const pct = Math.min(100, (currentUserDescriptors.length / maxCaptures) * 100);
+        fill.style.width = pct + '%';
+    }
     const show = currentUserDescriptors.length > 0;
     const retake = document.getElementById('retakeBtn');
     const restart = document.getElementById('restartBtn');
@@ -97,17 +158,15 @@ function updateProgress() {
     if (restart) restart.style.display = show ? 'inline-block' : 'none';
 }
 
-function addCapturePreview(imageData) {
-    if (!imageData) return;
+function addCapturePreview(dataUrl) {
+    if (!dataUrl) return;
     const preview = document.getElementById('capturePreview');
     if (!preview) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = imageData.width;
-    canvas.height = imageData.height;
-    canvas.getContext('2d').putImageData(imageData, 0, 0);
     const img = document.createElement('img');
-    img.src = canvas.toDataURL();
+    img.src = dataUrl;
+    img.className = 'capture-thumb';
     preview.appendChild(img);
+    requestAnimationFrame(() => img.classList.add('show'));
 }
 
 function retakeLastCapture() {
@@ -117,6 +176,7 @@ function retakeLastCapture() {
     const preview = document.getElementById('capturePreview');
     if (preview && preview.lastChild) preview.removeChild(preview.lastChild);
     updateProgress();
+    saveProgress();
 }
 
 function restartRegistration() {
@@ -128,6 +188,7 @@ function restartRegistration() {
     registrationCompleted = false;
     faceapi_action = 'register';
     updateProgress();
+    clearProgress();
     camera_start();
 }
 
@@ -135,6 +196,7 @@ function cancelRegistration() {
     camera_stop();
     faceapi_action = null;
     registrationCompleted = true;
+    clearProgress();
 }
 
 function isConsistentWithCurrentUser(descriptor) {
@@ -182,14 +244,23 @@ function drawRegistrationOverlay(detection) {
 }
 
 async function camera_start() {
-	var video = document.getElementById(videoId);
-	try {
-		var stream = await navigator.mediaDevices.getUserMedia({ video: true });
-		video.srcObject = stream;
-	} catch (error) {
-		console.error('Error accessing webcam:', error);
-		alert('Unable to access camera. Please check permissions. ' + error.name + ': ' + error.message);
-	}
+        var video = document.getElementById(videoId);
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('getUserMedia not supported');
+                if (typeof showPermissionOverlay === 'function') showPermissionOverlay();
+                showMessage('error', 'Camera not supported in this browser.');
+                return;
+        }
+        try {
+                var stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                const overlay = document.getElementById('permissionOverlay');
+                if (overlay) overlay.style.display = 'none';
+        } catch (error) {
+                console.error('Error accessing webcam:', error);
+                if (typeof showPermissionOverlay === 'function') showPermissionOverlay();
+                showMessage('error', 'Unable to access camera: ' + error.message);
+        }
 }
 
 async function camera_stop() {
@@ -513,6 +584,40 @@ async function saveRegistration(userData) {
     }
 }
 
+async function getAllRegistrations() {
+    try {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('users', 'readonly');
+            const req = tx.objectStore('users').getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = e => reject(e.target.error);
+        });
+    } catch (err) {
+        console.error('IndexedDB read error', err);
+        return [];
+    }
+}
+
+async function exportRegistrations() {
+    try {
+        const entries = await getAllRegistrations();
+        if (!entries || entries.length === 0) {
+            alert('No saved registrations to export.');
+            return;
+        }
+        const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'offline_registrations.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('Export failed', err);
+    }
+}
+
 function faceapi_register(descriptor) {
     if (!descriptor || registrationCompleted) {
         return;
@@ -548,10 +653,16 @@ function faceapi_register(descriptor) {
     if (accept) {
         currentUserDescriptors.push(descriptor);
         if (lastFaceImageData) {
-            capturedFrames.push(lastFaceImageData);
-            addCapturePreview(lastFaceImageData);
+            const cv = document.createElement('canvas');
+            cv.width = lastFaceImageData.width;
+            cv.height = lastFaceImageData.height;
+            cv.getContext('2d').putImageData(lastFaceImageData, 0, 0);
+            const url = cv.toDataURL();
+            capturedFrames.push(url);
+            addCapturePreview(url);
         }
         updateProgress();
+        saveProgress();
         // Reset attempt tracking
         currentRegistrationAttempt = 0;
         bestCandidateDescriptor = null;
@@ -562,6 +673,7 @@ function faceapi_register(descriptor) {
             registrationCompleted = true;
             faceapi_action = null;
             camera_stop();
+            clearProgress();
             // Build one entry per captured descriptor
             const downloadData = currentUserDescriptors.map(desc => ({
                 id: currentUserId,
@@ -696,7 +808,9 @@ async function initWorkerAddEventListener() {
 				} else {
 					console.log("faceapi_action is NULL");
 				}
-			}
+                        } else {
+                                showMessage("error", "No face detected. Make sure your face is fully visible and well lit.");
+                        }
 			
 			if (typeof vle_face_landmark_position_yn === "string" && vle_face_landmark_position_yn == "y") {
 				if (Array.isArray(dets) && dets.length > 0 && dets[0]) {
@@ -904,6 +1018,8 @@ async function startInMainThread() {
 
 // Initialize either service worker or fallback on main thread
 document.addEventListener("DOMContentLoaded", async function(event) {
+    loadProgress();
+    adjustDetectionForDevice();
     console.log("DOMContentLoaded - checking Service Worker support");
     const canUseWorker = 'serviceWorker' in navigator && typeof OffscreenCanvas !== 'undefined';
     if (canUseWorker) {
