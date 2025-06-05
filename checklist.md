@@ -5,6 +5,9 @@
 - [ ] Display remaining captures and allow retakes before final submission
 - [ ] Alert when more than one face is detected to avoid incorrect enrollment
 - [ ] Responsive layout updates for small screen/mobile devices
+- [ ] Detect device orientation and prompt users to rotate to portrait
+- [ ] Use full-screen overlay to focus camera feed on mobile
+- [ ] Large touch-friendly buttons for capture and controls
 - [ ] Option to cancel or restart registration from the page
 - [ ] Preview captured frames so users can confirm quality
 - [ ] Improve error messages with specific instructions when registration fails

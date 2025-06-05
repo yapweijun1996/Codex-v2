@@ -130,10 +130,10 @@
 				height:auto;
 				max-height:100vh;
 				aspect-ratio:4/3;
-			}
+                       }
 
-			/* Adapt video & snapshot to portrait (mobile) 9:16 ratio */
-			@media (orientation: portrait){
+                       /* Adapt video & snapshot to portrait (mobile) 9:16 ratio */
+                       @media (orientation: portrait){
 				.face-detection-container{
 					flex-direction:column;
 					padding:0;
@@ -158,8 +158,22 @@
 .overlay{
         width:100%;
         height:100%;
-        object-fit:cover;
-}
+                                object-fit:cover;
+                        }
+
+                        #orientationOverlay{
+                                position:fixed;
+                                inset:0;
+                                background:rgba(0,0,0,0.8);
+                                color:white;
+                                display:none;
+                                justify-content:center;
+                                align-items:center;
+                                text-align:center;
+                                padding:1rem;
+                                z-index:9999;
+                                font-size:1.2rem;
+                        }
 
 #capturePreview img{
         width:64px;
@@ -181,8 +195,9 @@
 			}
 		</script>
 	</head>
-	<body>
-		<h1>Face Detection</h1>
+        <body>
+                <div id="orientationOverlay">Please rotate your device to portrait orientation for best results.</div>
+                <h1>Face Detection</h1>
 		<a href="#" onclick="urlReplace('index.html')">Go to Index</a><br>
 		<!-- Add user ID and name inputs -->
 		<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
@@ -201,13 +216,26 @@
 				const params = new URLSearchParams(window.location.search);
 				return params.get(name);
 			}
-			document.addEventListener('DOMContentLoaded', () => {
-				const defId = getParam('userid') || 'test001';
-				const defName = getParam('username') || 'test';
-				document.getElementById('userIdInput').value = defId;
-				document.getElementById('userNameInput').value = defName;
-			});
-		</script>
+                        document.addEventListener('DOMContentLoaded', () => {
+                                const defId = getParam('userid') || 'test001';
+                                const defName = getParam('username') || 'test';
+                                document.getElementById('userIdInput').value = defId;
+                                document.getElementById('userNameInput').value = defName;
+                                checkOrientation();
+                        });
+
+                        function checkOrientation(){
+                                const overlay = document.getElementById('orientationOverlay');
+                                if(window.innerHeight >= window.innerWidth){
+                                        overlay.style.display = 'none';
+                                }else{
+                                        overlay.style.display = 'flex';
+                                }
+                        }
+
+                        window.addEventListener('orientationchange', checkOrientation);
+                        window.addEventListener('resize', checkOrientation);
+                </script>
 		
 		<div class="face-detection-container"  style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
 			<div class="video-wrapper">
