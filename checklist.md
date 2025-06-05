@@ -13,3 +13,11 @@
 - [x] Improve error messages with specific instructions when registration fails
 - [x] Consider storing registrations locally with IndexedDB for offline flow
 
+
+## Descriptor Accuracy & Reliability
+
+- [x] Calibrate `registrationSimilarityThreshold`, `consistencyThreshold`, and `vle_distance_rate` using real-world samples.
+- [x] Average accepted descriptors to create a mean descriptor per user.
+- [x] Reject captures with low quality (blur, extreme angles, poor lighting).
+- [x] Log the distance between each attempt to refine thresholds.
+- [x] Verify new captures are unique across all users to prevent duplicates.
