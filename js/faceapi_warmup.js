@@ -791,11 +791,12 @@ async function initWorkerAddEventListener() {
 					if (registrationStartTime === null) {
 						registrationStartTime = Date.now();
 					}
-					if (Date.now() - registrationStartTime > registrationTimeout) {
+                                        if (Date.now() - registrationStartTime > registrationTimeout) {
                                                 showMessage('error', 'Registration timed out. Ensure you are well lit and try again.');
-						faceapi_action = null;
-						camera_stop();
-						registrationCompleted = true;
+                                                if (typeof showTimeoutOverlay === 'function') showTimeoutOverlay();
+                                                faceapi_action = null;
+                                                camera_stop();
+                                                registrationCompleted = true;
                                         } else if (dets.length !== 1) {
                                                 showMessage('error', 'Multiple faces detected. Please ensure only your face is visible.');
                                         } else {
