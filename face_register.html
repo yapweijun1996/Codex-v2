@@ -316,10 +316,24 @@
                                }
                        }
 
-                       #registrationMessage{
-                               margin-top:10px;
+                       #messageOverlay{
+                               position:absolute;
+                               top:0;
+                               left:0;
+                               width:100%;
+                               text-align:center;
+                               pointer-events:none;
+                               z-index:20;
+                       }
+
+                       #messageOverlay > *{
+                               margin:4px 8px;
+                               padding:4px 8px;
                                font-size:0.9rem;
-                               min-height:1.2em;
+                               background:rgba(0,0,0,0.6);
+                               color:#fff;
+                               border-radius:4px;
+                               display:inline-block;
                        }
                        </style>
 		
@@ -379,8 +393,6 @@
 		<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
                 <label>User Name: <input type="text" id="userNameInput" placeholder="Enter user name"></label><br>
                 <input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple><br>
-                <div id="registrationMessage"></div>
-                <p id="tips" style="margin-top:10px;color:#555;font-size:0.9rem;">Keep your face centered and move slowly.</p>
                <div id="progressContainer" class="controls">
                         <span id="progressText">0/20 captures</span>
                         <div id="progressBar"><div id="progressFill"></div></div>
@@ -434,15 +446,19 @@
                 </script>
 		
 		<div class="face-detection-container"  style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
-			<div class="video-wrapper">
-				<video id="video" width="640" height="480" autoplay playsinline muted></video>
-				<!-- Hidden canvas for inference: captures each video frame to send to the worker for face detection -->
-				<canvas id="canvas" class="overlay"></canvas>
-				<!-- Overlay canvas for drawing facial landmarks on top of the video -->
-				<canvas id="canvas2" class="overlay"></canvas>
-				<!-- Overlay canvas for drawing face bounding boxes and confidence scores -->
-				<canvas id="canvas3" class="overlay"></canvas>
-			</div>
+                        <div class="video-wrapper">
+                                <video id="video" width="640" height="480" autoplay playsinline muted></video>
+                                <!-- Hidden canvas for inference: captures each video frame to send to the worker for face detection -->
+                                <canvas id="canvas" class="overlay"></canvas>
+                                <!-- Overlay canvas for drawing facial landmarks on top of the video -->
+                                <canvas id="canvas2" class="overlay"></canvas>
+                                <!-- Overlay canvas for drawing face bounding boxes and confidence scores -->
+                                <canvas id="canvas3" class="overlay"></canvas>
+                                <div id="messageOverlay">
+                                        <div id="registrationMessage"></div>
+                                        <p id="tips">Keep your face centered and move slowly.</p>
+                                </div>
+                        </div>
 			<!-- Snapshot canvas: displays the captured face image along with the confidence percentage -->
 			<canvas id="canvas_output" class="snapshot"></canvas>
 		</div>
