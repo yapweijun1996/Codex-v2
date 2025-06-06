@@ -642,7 +642,7 @@ function startRegistrationTimer() {
         timeLeft--;
         updateTimerText();
         if (timeLeft <= 0) {
-            stopRegistrationTimer();
+            stopRegistrationTimer(true);
         }
     }, 1000);
 }
@@ -654,7 +654,7 @@ function updateTimerText() {
     }
 }
 
-function stopRegistrationTimer() {
+function stopRegistrationTimer(triggerTimeout = false) {
     if (registrationTimer) {
         clearInterval(registrationTimer);
         registrationTimer = null;
@@ -662,6 +662,13 @@ function stopRegistrationTimer() {
     const el = document.getElementById('timerText');
     if (el) {
         el.innerText = '';
+    }
+    if (triggerTimeout && !registrationCompleted) {
+        showMessage('error', 'Registration timed out. Ensure you are well lit and try again.');
+        if (typeof showTimeoutOverlay === 'function') showTimeoutOverlay();
+        faceapi_action = null;
+        camera_stop();
+        registrationCompleted = true;
     }
 }
 
