@@ -265,6 +265,21 @@
                                box-shadow:0 -2px 4px rgba(0,0,0,0.1);
                                padding:0.5rem;
                         }
+                       #progressButtons{
+                               display:flex;
+                               flex-wrap:wrap;
+                               gap:0.5rem;
+                               justify-content:center;
+                               align-items:center;
+                               max-height:0;
+                               opacity:0;
+                               overflow:hidden;
+                               transition:max-height 0.3s ease, opacity 0.3s ease;
+                       }
+                       #progressContainer.expanded #progressButtons{
+                               max-height:200px;
+                               opacity:1;
+                       }
                        .ctrl-btn{
                                padding:14px 18px;
                                font-size:1.1rem;
@@ -369,9 +384,11 @@
                <div id="progressContainer" class="controls">
                         <span id="progressText">0/20 captures</span>
                         <div id="progressBar"><div id="progressFill"></div></div>
-                        <button id="retakeBtn" class="ctrl-btn" style="display:none;">Retake Last</button>
-                        <button id="restartBtn" class="ctrl-btn" style="display:none;">Restart</button>
-                        <button id="cancelBtn" class="ctrl-btn">Cancel</button>
+                        <div id="progressButtons">
+                                <button id="retakeBtn" class="ctrl-btn">Retake Last</button>
+                                <button id="restartBtn" class="ctrl-btn">Restart</button>
+                                <button id="cancelBtn" class="ctrl-btn">Cancel</button>
+                        </div>
                 </div>
                 <div id="capturePreview"></div>
                 <script>
@@ -401,6 +418,20 @@
 
                         window.addEventListener('orientationchange', checkOrientation);
                         window.addEventListener('resize', checkOrientation);
+
+                        document.addEventListener('DOMContentLoaded', () => {
+                                const container = document.getElementById('progressContainer');
+                                const bar = document.getElementById('progressBar');
+                                bar.addEventListener('click', (e) => {
+                                        container.classList.toggle('expanded');
+                                        e.stopPropagation();
+                                });
+                                document.addEventListener('click', (e) => {
+                                        if(!container.contains(e.target)){
+                                                container.classList.remove('expanded');
+                                        }
+                                });
+                        });
                 </script>
 		
 		<div class="face-detection-container"  style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
