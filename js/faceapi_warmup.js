@@ -212,6 +212,14 @@ function restartRegistration() {
     faceapi_action = 'register';
     updateProgress();
     clearProgress();
+    [canvasId, canvasId2, canvasId3, canvasOutputId].forEach(id => {
+        const c = document.getElementById(id);
+        if (c) {
+            const ctx = c.getContext('2d');
+            ctx.clearRect(0, 0, c.width, c.height);
+            c.style.display = 'none';
+        }
+    });
     const container = document.querySelector('.face-detection-container');
     if (container) container.style.display = 'flex';
     camera_start();
