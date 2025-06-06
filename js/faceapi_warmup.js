@@ -162,19 +162,6 @@ function showMessage(type, message) {
     }
 }
 
-function playBeep(){
-    try{
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = 880;
-        osc.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.1);
-    }catch(e){
-        console.warn('audio feedback not supported');
-    }
-}
 
 function updateProgress() {
     const el = document.getElementById('progressText');
@@ -822,7 +809,6 @@ async function initWorkerAddEventListener() {
                                                 } else {
                                                         showMessage('success', 'Face capture accepted.');
                                                         if(navigator.vibrate){ navigator.vibrate(100); }
-                                                        playBeep();
                                                         faceapi_register(descriptor);
                                                 }
                                         }
