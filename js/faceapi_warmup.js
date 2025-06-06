@@ -1039,6 +1039,7 @@ async function startInMainThread() {
 
 // Initialize either service worker or fallback on main thread
 document.addEventListener("DOMContentLoaded", async function(event) {
+    clearProgress();
     loadProgress();
     adjustDetectionForDevice();
     console.log("DOMContentLoaded - checking Service Worker support");
