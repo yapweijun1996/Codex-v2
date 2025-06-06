@@ -223,28 +223,51 @@
 				transition: opacity 0.5s ease;
 			}
 			
-			#instructionsOverlay{
-				position:fixed;
-				inset:0;
-				background:rgba(0,0,0,0.85);
-				color:white;
-				display:none;
-				justify-content:center;
-				align-items:center;
-				text-align:center;
-				padding:1rem;
-				z-index:10002;
-				font-size:1.2rem;
-			}
-			#instructionsOverlay button{
-				margin-top:1rem;
-				padding:12px 16px;
-				font-size:1rem;
-				border:none;
-				border-radius:6px;
-				background:#4CAF50;
-				color:#fff;
-			}
+                        #instructionsOverlay{
+                                position:fixed;
+                                inset:0;
+                                background:rgba(0,0,0,0.85);
+                                color:white;
+                                display:none;
+                                justify-content:center;
+                                align-items:center;
+                                text-align:center;
+                                padding:1rem;
+                                z-index:10002;
+                                font-size:1.2rem;
+                        }
+                        #instructionsOverlay button{
+                                margin-top:1rem;
+                                padding:12px 16px;
+                                font-size:1rem;
+                                border:none;
+                                border-radius:6px;
+                                background:#4CAF50;
+                                color:#fff;
+                        }
+
+                        #timeoutOverlay{
+                                position:fixed;
+                                inset:0;
+                                background:rgba(0,0,0,0.85);
+                                color:white;
+                                display:none;
+                                justify-content:center;
+                                align-items:center;
+                                text-align:center;
+                                padding:1rem;
+                                z-index:10003;
+                                font-size:1.2rem;
+                        }
+                        #timeoutOverlay button{
+                                margin:0.5rem;
+                                padding:12px 16px;
+                                font-size:1rem;
+                                border:none;
+                                border-radius:6px;
+                                background:#4CAF50;
+                                color:#fff;
+                        }
 			
 			/* Touch-friendly buttons */
 			.controls{
@@ -371,28 +394,54 @@
 					el.style.display = 'flex';
 				}
 			}
-			function hideInstructions(){
-				const el = document.getElementById('instructionsOverlay');
-				if(el){
-					el.style.display = 'none';
-					localStorage.setItem('instructionsShown','1');
-				}
-			}
-		</script>
-	</head>
+                        function hideInstructions(){
+                                const el = document.getElementById('instructionsOverlay');
+                                if(el){
+                                        el.style.display = 'none';
+                                        localStorage.setItem('instructionsShown','1');
+                                }
+                        }
+
+                        function showTimeoutOverlay(){
+                                const el = document.getElementById('timeoutOverlay');
+                                if(el){
+                                        el.style.display = 'flex';
+                                        const container = document.getElementById('progressContainer');
+                                        if(container){
+                                                container.classList.add('expanded');
+                                        }
+                                }
+                        }
+
+                        function hideTimeoutOverlay(){
+                                const el = document.getElementById('timeoutOverlay');
+                                if(el){
+                                        el.style.display = 'none';
+                                }
+                        }
+                </script>
+        </head>
 	<body>
 		<div id="loadingOverlay">Loading face detection models...</div>
 		<div id="orientationOverlay">Please rotate your device to portrait orientation for best results.</div>
 		<div id="permissionOverlay">Camera access is required. Please grant permission or open this page in a supported browser.</div>
-		<div id="instructionsOverlay">
-			<div>
-				<p>Step 1: Position your face within the frame.</p>
-				<p>Step 2: Slowly turn your head left and right.</p>
-				<p>Step 3: Tap capture when ready.</p>
-				<button onclick="hideInstructions()">Got it</button>
-			</div>
-		</div>
-		<div style="display:none;">
+                <div id="instructionsOverlay">
+                        <div>
+                                <p>Step 1: Position your face within the frame.</p>
+                                <p>Step 2: Slowly turn your head left and right.</p>
+                                <p>Step 3: Tap capture when ready.</p>
+                                <button onclick="hideInstructions()">Got it</button>
+                        </div>
+                </div>
+                <div id="timeoutOverlay">
+                        <div>
+                                <p>Registration timed out.</p>
+                                <p>Please ensure good lighting and try again.</p>
+                                <button onclick="hideTimeoutOverlay(); restartRegistration()">Retry</button>
+                                <button onclick="hideTimeoutOverlay(); cancelRegistration()">Cancel</button>
+                        </div>
+                </div>
+                <div style="display:none;">
 			<h1>Face Detection</h1>
 			<a href="#" onclick="urlReplace('index.html')">Go to Index</a><br>
 			<input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
