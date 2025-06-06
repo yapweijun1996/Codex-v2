@@ -1029,9 +1029,9 @@ function faceapi_warmup() {
 // Main-thread fallback for environments without SW/OffscreenCanvas (e.g. iOS PWA)
 async function startInMainThread() {
     console.log("Main-thread fallback: loading face-api models directly");
-    await faceapi.nets.tinyFaceDetector.loadFromUri('../models');
-    await faceapi.nets.faceLandmark68Net.loadFromUri('../models');
-    await faceapi.nets.faceRecognitionNet.loadFromUri('../models');
+    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('./models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('./models');
     if (Array.isArray(warmup_completed)) {
         warmup_completed.forEach(func => func());
     }
