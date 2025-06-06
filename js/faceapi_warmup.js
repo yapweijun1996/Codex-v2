@@ -202,6 +202,7 @@ function retakeLastCapture() {
 }
 
 function restartRegistration() {
+    stopRegistrationTimer();
     currentUserDescriptors = [];
     capturedFrames = [];
     const preview = document.getElementById('capturePreview');
@@ -218,6 +219,7 @@ function cancelRegistration() {
     camera_stop();
     faceapi_action = null;
     registrationCompleted = true;
+    stopRegistrationTimer();
     currentUserDescriptors = [];
     capturedFrames = [];
     const preview = document.getElementById('capturePreview');
@@ -623,8 +625,41 @@ var registrationCompleted = false;
 var verificationCompleted = false;
 var registrationStartTime = null;
 var registrationTimeout = 1 * 60 * 1000; // 1 minute
+var registrationTimer = null;
+var timeLeft = registrationTimeout;
 var capturedFrames = [];
 var lastFaceImageData = null;
+
+function startRegistrationTimer() {
+    stopRegistrationTimer();
+    timeLeft = registrationTimeout / 1000;
+    updateTimerText();
+    registrationTimer = setInterval(() => {
+        timeLeft--;
+        updateTimerText();
+        if (timeLeft <= 0) {
+            stopRegistrationTimer();
+        }
+    }, 1000);
+}
+
+function updateTimerText() {
+    const el = document.getElementById('timerText');
+    if (el) {
+        el.innerText = `Time left: ${timeLeft}s`;
+    }
+}
+
+function stopRegistrationTimer() {
+    if (registrationTimer) {
+        clearInterval(registrationTimer);
+        registrationTimer = null;
+    }
+    const el = document.getElementById('timerText');
+    if (el) {
+        el.innerText = '';
+    }
+}
 
 function faceapi_register(descriptor) {
     if (!descriptor || registrationCompleted) {
@@ -681,6 +716,7 @@ function faceapi_register(descriptor) {
         if (currentUserDescriptors.length >= maxCaptures) {
             alert("Registration completed for user: " + currentUserName + " (" + currentUserId + ")");
             registrationCompleted = true;
+            stopRegistrationTimer();
             faceapi_action = null;
             camera_stop();
             clearProgress();
@@ -798,13 +834,16 @@ async function initWorkerAddEventListener() {
 					// Handle registration timeout
 					if (registrationStartTime === null) {
 						registrationStartTime = Date.now();
+        startRegistrationTimer();
 					}
                                         if (Date.now() - registrationStartTime > registrationTimeout) {
+        stopRegistrationTimer();
                                                 showMessage('error', 'Registration timed out. Ensure you are well lit and try again.');
                                                 if (typeof showTimeoutOverlay === 'function') showTimeoutOverlay();
                                                 faceapi_action = null;
                                                 camera_stop();
                                                 registrationCompleted = true;
+            stopRegistrationTimer();
                                         } else if (dets.length !== 1) {
                                                 showMessage('error', 'Multiple faces detected. Please ensure only your face is visible.');
                                         } else {
