@@ -264,6 +264,8 @@
 				background:rgba(255,255,255,0.9);
 				box-shadow:0 -2px 4px rgba(0,0,0,0.1);
 				padding:0.5rem;
+				margin: 0 auto;
+				border-radius: 25px 25px 0px 0px;
 			}
 			#progressButtons{
 				display:flex;
@@ -295,7 +297,7 @@
 			#progressBar{
 				width:100%;
 				background:#eee;
-				height:8px;
+				height:10px;
 				border-radius:4px;
 				overflow:hidden;
 				margin:4px 0;
@@ -402,7 +404,9 @@
 			<span id="progressText">0/20 captures</span>
 			<div id="progressBar"><div id="progressFill"></div></div>
 			<div id="progressButtons">
-				<button id="retakeBtn" class="ctrl-btn">Retake Last</button>
+				<div style="display:none;">
+					<button id="retakeBtn" class="ctrl-btn">Retake Last</button>
+				</div>
 				<button id="restartBtn" class="ctrl-btn">Restart</button>
 				<button id="cancelBtn" class="ctrl-btn">Cancel</button>
 			</div>
