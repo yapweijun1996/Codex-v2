@@ -327,12 +327,17 @@
 				flex:1 0 100%;
 			}
 			
-			#progressFill{
-				width:0;
-				height:100%;
-				background:#4CAF50;
-				transition:width 0.3s ease;
-			}
+                        #progressFill{
+                                width:0;
+                                height:100%;
+                                background:#4CAF50;
+                                transition:width 0.3s ease;
+                        }
+
+                        #timerText{
+                                margin-left:0.5rem;
+                                font-weight:bold;
+                        }
 			
 			@media(max-width:768px){
 				.ctrl-btn{
@@ -450,8 +455,9 @@
 			<label>User Name: <input type="text" id="userNameInput" placeholder="Enter user name"></label><br>
 		</div>
 		<div id="progressContainer" class="controls">
-			<span id="progressText">0/20 captures</span>
-			<div id="progressBar"><div id="progressFill"></div></div>
+                        <span id="progressText">0/20 captures</span>
+                        <span id="timerText"></span>
+                        <div id="progressBar"><div id="progressFill"></div></div>
 			<div id="progressButtons">
 				<div style="display:none;">
 					<button id="retakeBtn" class="ctrl-btn">Retake Last</button>
