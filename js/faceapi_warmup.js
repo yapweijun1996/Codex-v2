@@ -218,6 +218,11 @@ function cancelRegistration() {
     camera_stop();
     faceapi_action = null;
     registrationCompleted = true;
+    currentUserDescriptors = [];
+    capturedFrames = [];
+    const preview = document.getElementById('capturePreview');
+    if (preview) preview.innerHTML = '';
+    updateProgress();
     clearProgress();
 }
 
@@ -322,13 +327,16 @@ async function camera_start() {
 }
 
 async function camera_stop() {
-	var video = document.getElementById(videoId);
-	if (video.srcObject) {
-		const stream = video.srcObject;
-		const tracks = stream.getTracks();
-		tracks.forEach(track => track.stop());
-		video.srcObject = null;
-	}
+        var video = document.getElementById(videoId);
+        if (video.srcObject) {
+                const stream = video.srcObject;
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+                video.pause();
+        }
+        isDetectingFrame = false;
+        videoDetectionStep = null;
 }
 
 async function handleJsonFileInput(event) {
