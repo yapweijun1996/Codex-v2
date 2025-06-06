@@ -421,8 +421,7 @@
 
                         document.addEventListener('DOMContentLoaded', () => {
                                 const container = document.getElementById('progressContainer');
-                                const bar = document.getElementById('progressBar');
-                                bar.addEventListener('click', (e) => {
+                                container.addEventListener('click', (e) => {
                                         container.classList.toggle('expanded');
                                         e.stopPropagation();
                                 });
