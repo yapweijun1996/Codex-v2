@@ -212,6 +212,8 @@ function restartRegistration() {
     faceapi_action = 'register';
     updateProgress();
     clearProgress();
+    const container = document.querySelector('.face-detection-container');
+    if (container) container.style.display = 'flex';
     camera_start();
 }
 
@@ -226,6 +228,8 @@ function cancelRegistration() {
     if (preview) preview.innerHTML = '';
     updateProgress();
     clearProgress();
+    const container = document.querySelector('.face-detection-container');
+    if (container) container.style.display = 'none';
 }
 
 function isConsistentWithCurrentUser(descriptor) {
