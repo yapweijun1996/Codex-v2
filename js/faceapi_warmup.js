@@ -149,12 +149,16 @@ function showMessage(type, message) {
     if (msgEl) {
         msgEl.innerText = message;
         msgEl.style.color = type === 'error' ? 'red' : 'green';
+        msgEl.style.display = message ? 'inline-block' : 'none';
         if (msgEl._hideTimer) {
             clearTimeout(msgEl._hideTimer);
         }
-        msgEl._hideTimer = setTimeout(() => {
-            msgEl.innerText = '';
-        }, 5000);
+        if (message) {
+            msgEl._hideTimer = setTimeout(() => {
+                msgEl.innerText = '';
+                msgEl.style.display = 'none';
+            }, 5000);
+        }
     }
 }
 
