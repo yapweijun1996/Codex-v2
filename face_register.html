@@ -390,12 +390,14 @@
                                <button onclick="hideInstructions()">Got it</button>
                        </div>
                </div>
-               <h1>Face Detection</h1>
-		<a href="#" onclick="urlReplace('index.html')">Go to Index</a><br>
-		<!-- Add user ID and name inputs -->
-		<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
+               <div style="display:none;">
+                       <h1>Face Detection</h1>
+                        <a href="#" onclick="urlReplace('index.html')">Go to Index</a><br>
+                        <input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
+               </div>
+                <!-- Add user ID and name inputs -->
+                <label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
                 <label>User Name: <input type="text" id="userNameInput" placeholder="Enter user name"></label><br>
-                <input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple><br>
                <div id="progressContainer" class="controls">
                         <span id="progressText">0/20 captures</span>
                         <div id="progressBar"><div id="progressFill"></div></div>
