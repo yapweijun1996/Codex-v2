@@ -631,6 +631,17 @@ function draw_face_landmarks(detection) {
     }
 }
 
+/**
+ * Clears the landmarks overlay canvas and hides it.
+ */
+function clear_landmarks() {
+    const canvas = document.getElementById(canvasId2);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.display = 'none';
+}
+
 var registeredDescriptors = [];
 var maxCaptures = 20;
 var registrationCompleted = false;
@@ -886,11 +897,13 @@ async function initWorkerAddEventListener() {
                                 showMessage("error", "No face detected. Make sure your face is fully visible and well lit.");
                         }
 			
-			if (typeof vle_face_landmark_position_yn === "string" && vle_face_landmark_position_yn == "y") {
-				if (Array.isArray(dets) && dets.length > 0 && dets[0]) {
-					draw_face_landmarks(dets[0]);
-				}
-			}
+                        if (typeof vle_face_landmark_position_yn === "string" && vle_face_landmark_position_yn == "y") {
+                                if (Array.isArray(dets) && dets.length > 0 && dets[0]) {
+                                        draw_face_landmarks(dets[0]);
+                                } else {
+                                        clear_landmarks();
+                                }
+                        }
 			
 			if (multiple_face_detection_yn !== "y" && typeof vle_facebox_yn === "string" && vle_facebox_yn == "y") {
 				var temp_canvas_id = canvasId3;
@@ -1177,6 +1190,10 @@ function drawAllBoxesAndLabels(detectionsArray) {
 }
 
 function drawAllFaces(detectionsArray) {
+    if (!Array.isArray(detectionsArray) || detectionsArray.length === 0) {
+        clear_landmarks();
+        return;
+    }
     drawAllLandmarks(detectionsArray);
     drawAllBoxesAndLabels(detectionsArray);
 }
