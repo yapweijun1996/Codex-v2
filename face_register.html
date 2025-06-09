@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 		<title>Face Detection</title>
 		<link rel="manifest" href="manifest.json">
 		<meta name="theme-color" content="#4CAF50">
@@ -17,15 +17,16 @@
 				box-sizing: border-box;
 			}
 			
-			body {
-				font-family: Arial, sans-serif;
-				background-color: #f4f4f9;
-				display: flex;
-				align-items: center;
-				height: 100vh;
-				flex-direction: column;
-				color: #333;
-			}
+                        body {
+                                font-family: Arial, sans-serif;
+                                background-color: #f4f4f9;
+                                display: flex;
+                                align-items: center;
+                                touch-action: manipulation;
+                                height: 100vh;
+                                flex-direction: column;
+                                color: #333;
+                        }
 			
 			/* Centering and spacing */
 			h1 {
