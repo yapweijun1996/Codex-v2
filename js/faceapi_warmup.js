@@ -864,14 +864,13 @@ async function initWorkerAddEventListener() {
                         const dets = event.data.data.detections[0];
                         lastFaceImageData = event.data.data.detections[1] && event.data.data.detections[1][0];
                         drawImageDataToCanvas(event.data.data.detections, canvasOutputId);
-			if (Array.isArray(dets) && dets.length > 0) {
-				if (faceapi_action === "verify") {
-					if (multiple_face_detection_yn === "y") {
-						drawAllFaces(dets);
-					} else {
-						faceapi_verify(dets[0].descriptor);
-					}
-				} else if (faceapi_action === "register") {
+                        drawAllFaces(Array.isArray(dets) ? dets : []);
+                        if (Array.isArray(dets) && dets.length > 0) {
+                                if (faceapi_action === "verify") {
+                                        if (multiple_face_detection_yn !== "y") {
+                                                faceapi_verify(dets[0].descriptor);
+                                        }
+                                } else if (faceapi_action === "register") {
 					// Handle registration timeout
 					if (registrationStartTime === null) {
 						registrationStartTime = Date.now();
