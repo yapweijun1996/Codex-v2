@@ -642,6 +642,17 @@ function clear_landmarks() {
     canvas.style.display = 'none';
 }
 
+/**
+ * Clears the face bounding box overlay canvas and hides it.
+ */
+function clear_boxes() {
+    const canvas = document.getElementById(canvasId3);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.display = 'none';
+}
+
 var registeredDescriptors = [];
 var maxCaptures = 20;
 var registrationCompleted = false;
@@ -1192,6 +1203,7 @@ function drawAllBoxesAndLabels(detectionsArray) {
 function drawAllFaces(detectionsArray) {
     if (!Array.isArray(detectionsArray) || detectionsArray.length === 0) {
         clear_landmarks();
+        clear_boxes();
         return;
     }
     drawAllLandmarks(detectionsArray);
