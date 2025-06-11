@@ -135,7 +135,7 @@
                         /* Preview thumbnails container */
                         #capturePreview{
                                 display:flex;
-                                flex-wrap:wrap;
+                                flex-wrap:nowrap;
                                 gap:4px;
                                 margin-bottom:10px;
                                 max-width:100%;
@@ -310,10 +310,14 @@
 				overflow:hidden;
 				transition:max-height 0.3s ease, opacity 0.3s ease;
 			}
-			#progressContainer.expanded #progressButtons{
-				max-height:200px;
-				opacity:1;
-			}
+                        #progressContainer.expanded #progressButtons{
+                                max-height:200px;
+                                opacity:1;
+                        }
+                        #progressContainer.expanded #capturePreview{
+                                flex-wrap:wrap;
+                                overflow-y:auto;
+                        }
 			.ctrl-btn{
 				padding:14px 18px;
 				font-size:1.1rem;
