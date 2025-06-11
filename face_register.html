@@ -378,10 +378,23 @@
 				border-radius:4px;
 				display:inline-block;
 			}
-			#registrationMessage{
-				display:none;
-			}
-		</style>
+                        #registrationMessage{
+                                display:none;
+                        }
+                        .modal{
+                                position:fixed;
+                                inset:0;
+                                background:rgba(0,0,0,0.8);
+                                display:none;
+                                justify-content:center;
+                                align-items:center;
+                                z-index:10004;
+                        }
+                        .modal img{
+                                max-width:90%;
+                                max-height:90%;
+                        }
+                </style>
 		
 		<!-- Load face-api core library first -->
 		<script src="./js/face-api.min.js"></script>
@@ -478,12 +491,13 @@
 				<button id="restartBtn" class="ctrl-btn">Restart</button>
 				<button id="cancelBtn" class="ctrl-btn">Cancel</button>
 			</div>
-                        <div id="capturePreview"></div>
+                <div id="capturePreview"></div>
                 </div>
-		<script>
-			function getParam(name) {
-				const params = new URLSearchParams(window.location.search);
-				return params.get(name);
+                <div id="imageModal" class="modal"><span class="close">&times;</span><img></div>
+                <script>
+                        function getParam(name) {
+                                const params = new URLSearchParams(window.location.search);
+                                return params.get(name);
 			}
 			document.addEventListener('DOMContentLoaded', async () => {
 				const defId = getParam('userid') || 'test001';
