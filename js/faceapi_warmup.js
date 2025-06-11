@@ -14,6 +14,11 @@
  * NOTE: For brevity the implementation uses a bunch of global variables. If you
  * intend to maintain / extend the code consider wrapping it inside an IIFE or
  * converting it to an ES Module to avoid polluting the global scope.
+ *
+ * The registration UI shows a progress panel containing thumbnail previews of
+ * each captured frame.  Users can tap these thumbnails to view them in a modal
+ * while the underlying video feed is paused.  Progress is persisted in
+ * IndexedDB so a partially completed registration survives a page reload.
  */
 var videoId = "video";
 /**
@@ -59,6 +64,13 @@ var flatRegisteredDescriptors = [];
 var flatRegisteredUserMeta = [];
 // Flag to allow multiple face detection ("y" = allow multiple, else single)
 var multiple_face_detection_yn = "y";
+
+// ---------------------------------------------------------------------------
+// Persisting registration progress
+// ---------------------------------------------------------------------------
+// Captured descriptors and thumbnails are stored in IndexedDB so that a user can
+// refresh the page or come back later without losing their partially completed
+// registration.  The helpers below handle saving/loading that state.
 
 async function openProgressDB() {
     return new Promise((resolve, reject) => {
@@ -1153,17 +1165,31 @@ document.addEventListener("DOMContentLoaded", async function(event) {
     if (retake) retake.addEventListener('click', retakeLastCapture);
     if (restart) restart.addEventListener('click', restartRegistration);
     if (cancel) cancel.addEventListener('click', cancelRegistration);
+    // ----- Preview thumbnail interaction -----
+    // Each captured frame is rendered as a small thumbnail inside the progress
+    // container.  When the user taps on a thumbnail we want to show a larger
+    // preview without collapsing the container.  The handler below expands the
+    // progress container if it isn't already, pauses the video stream, then
+    // displays the clicked image inside a modal dialog.
     const capturePreviewEl = document.getElementById('capturePreview');
     if (capturePreviewEl) {
         capturePreviewEl.addEventListener('click', e => {
+            // Only react when one of the <img class="capture-thumb"> elements is clicked
             if (e.target.classList.contains('capture-thumb')) {
+                // Prevent the click from triggering the container's toggle logic
                 e.stopPropagation();
+
                 const progressContainer = document.getElementById('progressContainer');
                 const video = document.getElementById('video');
+
+                // Automatically expand the progress panel so the enlarged image
+                // is visible, and pause the camera feed to avoid confusion.
                 if (progressContainer && !progressContainer.classList.contains('expanded')) {
                     progressContainer.classList.add('expanded');
                     if (video) video.pause();
                 }
+
+                // Populate and show the preview modal with the clicked image
                 const modal = document.getElementById('imageModal');
                 if (modal) {
                     modal.querySelector('img').src = e.target.src;
