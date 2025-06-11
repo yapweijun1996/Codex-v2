@@ -394,6 +394,19 @@
                                 max-width:90%;
                                 max-height:90%;
                         }
+                        .modal .prev,
+                        .modal .next{
+                                position:absolute;
+                                top:50%;
+                                transform:translateY(-50%);
+                                font-size:2rem;
+                                color:#fff;
+                                padding:0 10px;
+                                cursor:pointer;
+                                user-select:none;
+                        }
+                        .modal .prev{ left:10px; }
+                        .modal .next{ right:10px; }
                 </style>
 		
 		<!-- Load face-api core library first -->
@@ -493,7 +506,12 @@
 			</div>
                 <div id="capturePreview"></div>
                 </div>
-                <div id="imageModal" class="modal"><span class="close">&times;</span><img></div>
+                <div id="imageModal" class="modal">
+                        <span class="close">&times;</span>
+                        <span class="prev">&#10094;</span>
+                        <img>
+                        <span class="next">&#10095;</span>
+                </div>
                 <script>
                         function getParam(name) {
                                 const params = new URLSearchParams(window.location.search);
