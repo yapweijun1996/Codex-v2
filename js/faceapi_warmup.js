@@ -197,7 +197,10 @@ function addCapturePreview(dataUrl) {
     ta.value = dataUrl;
     preview.appendChild(ta);
 
-    requestAnimationFrame(() => img.classList.add('show'));
+    requestAnimationFrame(() => {
+        img.classList.add('show');
+        preview.scrollLeft = preview.scrollWidth;
+    });
 }
 
 function retakeLastCapture() {
