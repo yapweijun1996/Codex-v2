@@ -1153,6 +1153,26 @@ document.addEventListener("DOMContentLoaded", async function(event) {
     if (retake) retake.addEventListener('click', retakeLastCapture);
     if (restart) restart.addEventListener('click', restartRegistration);
     if (cancel) cancel.addEventListener('click', cancelRegistration);
+    const capturePreviewEl = document.getElementById('capturePreview');
+    if (capturePreviewEl) {
+        capturePreviewEl.addEventListener('click', e => {
+            if (e.target.classList.contains('capture-thumb')) {
+                const modal = document.getElementById('imageModal');
+                if (modal) {
+                    modal.querySelector('img').src = e.target.src;
+                    modal.style.display = 'flex';
+                }
+            }
+        });
+    }
+    const modalEl = document.getElementById('imageModal');
+    if (modalEl) {
+        modalEl.addEventListener('click', e => {
+            if (e.target === modalEl || e.target.classList.contains('close')) {
+                modalEl.style.display = 'none';
+            }
+        });
+    }
 });
 
 // Add multi-face drawing utilities
