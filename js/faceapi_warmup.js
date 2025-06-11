@@ -920,7 +920,7 @@ async function initWorkerAddEventListener() {
                                                 } else if (isDuplicateAcrossUsers(descriptor)) {
                                                         showMessage('error', 'This face appears already registered. Restart if this is incorrect.');
                                                 } else if (!isConsistentWithCurrentUser(descriptor)) {
-                                                        showMessage('error', 'Face differs from previous captures. Hold still and keep lighting consistent.');
+                                                        showMessage('error', 'Face recognized, but the angle changed too much. Please turn your head slowly left or right.');
                                                 } else {
                                                         showMessage('success', 'Face capture accepted.');
                                                         if(navigator.vibrate){ navigator.vibrate(100); }
