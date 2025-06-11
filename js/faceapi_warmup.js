@@ -1157,6 +1157,13 @@ document.addEventListener("DOMContentLoaded", async function(event) {
     if (capturePreviewEl) {
         capturePreviewEl.addEventListener('click', e => {
             if (e.target.classList.contains('capture-thumb')) {
+                e.stopPropagation();
+                const progressContainer = document.getElementById('progressContainer');
+                const video = document.getElementById('video');
+                if (progressContainer && !progressContainer.classList.contains('expanded')) {
+                    progressContainer.classList.add('expanded');
+                    if (video) video.pause();
+                }
                 const modal = document.getElementById('imageModal');
                 if (modal) {
                     modal.querySelector('img').src = e.target.src;
