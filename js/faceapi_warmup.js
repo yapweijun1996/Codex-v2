@@ -199,6 +199,7 @@ function addCapturePreview(dataUrl) {
     const img = document.createElement('img');
     img.src = dataUrl;
     img.className = 'capture-thumb';
+    img.dataset.index = capturedFrames.length - 1;
     preview.appendChild(img);
 
     const count = preview.querySelectorAll('textarea[id^="capturePreview_"]').length + 1;
@@ -690,6 +691,16 @@ var registrationTimer = null;
 var timeLeft = registrationTimeout;
 var capturedFrames = [];
 var lastFaceImageData = null;
+var currentModalIndex = -1;
+
+function showModalImage(index) {
+    const modal = document.getElementById('imageModal');
+    if (!modal || index < 0 || index >= capturedFrames.length) return;
+    const imgEl = modal.querySelector('img');
+    if (imgEl) imgEl.src = capturedFrames[index];
+    modal.style.display = 'flex';
+    currentModalIndex = index;
+}
 
 function startRegistrationTimer() {
     stopRegistrationTimer();
@@ -1189,17 +1200,44 @@ document.addEventListener("DOMContentLoaded", async function(event) {
                     if (video) video.pause();
                 }
 
-                // Populate and show the preview modal with the clicked image
-                const modal = document.getElementById('imageModal');
-                if (modal) {
-                    modal.querySelector('img').src = e.target.src;
-                    modal.style.display = 'flex';
-                }
+                showModalImage(parseInt(e.target.dataset.index));
             }
         });
     }
     const modalEl = document.getElementById('imageModal');
     if (modalEl) {
+        const prevBtn = modalEl.querySelector('.prev');
+        const nextBtn = modalEl.querySelector('.next');
+        if (prevBtn) prevBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            if (currentModalIndex > 0) {
+                showModalImage(currentModalIndex - 1);
+            }
+        });
+        if (nextBtn) nextBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            if (currentModalIndex < capturedFrames.length - 1) {
+                showModalImage(currentModalIndex + 1);
+            }
+        });
+        let touchStartX = 0;
+        modalEl.addEventListener('touchstart', e => {
+            if (e.touches && e.touches.length > 0) {
+                touchStartX = e.touches[0].screenX;
+            }
+        });
+        modalEl.addEventListener('touchend', e => {
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                const diff = e.changedTouches[0].screenX - touchStartX;
+                if (Math.abs(diff) > 30) {
+                    if (diff < 0 && currentModalIndex < capturedFrames.length - 1) {
+                        showModalImage(currentModalIndex + 1);
+                    } else if (diff > 0 && currentModalIndex > 0) {
+                        showModalImage(currentModalIndex - 1);
+                    }
+                }
+            }
+        });
         modalEl.addEventListener('click', e => {
             if (e.target === modalEl || e.target.classList.contains('close')) {
                 modalEl.style.display = 'none';
