@@ -188,6 +188,15 @@ function addCapturePreview(dataUrl) {
     img.src = dataUrl;
     img.className = 'capture-thumb';
     preview.appendChild(img);
+
+    const count = preview.querySelectorAll('textarea[id^="capturePreview_"]').length + 1;
+    const ta = document.createElement('textarea');
+    ta.id = `capturePreview_${count}`;
+    ta.className = 'capture-data';
+    ta.style.display = 'none';
+    ta.value = dataUrl;
+    preview.appendChild(ta);
+
     requestAnimationFrame(() => img.classList.add('show'));
 }
 
@@ -196,7 +205,10 @@ function retakeLastCapture() {
     currentUserDescriptors.pop();
     capturedFrames.pop();
     const preview = document.getElementById('capturePreview');
-    if (preview && preview.lastChild) preview.removeChild(preview.lastChild);
+    if (preview) {
+        if (preview.lastChild) preview.removeChild(preview.lastChild); // textarea
+        if (preview.lastChild) preview.removeChild(preview.lastChild); // image
+    }
     updateProgress();
     saveProgress();
 }

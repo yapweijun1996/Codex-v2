@@ -124,13 +124,39 @@
 				object-fit:contain;
 			}
 			
-			/* Snapshot canvas follows video size */
-			.snapshot{
-				width:100%;
-				height:auto;
-				max-height:100vh;
-				aspect-ratio:4/3;
-			}
+                        /* Snapshot canvas follows video size */
+                        .snapshot{
+                                width:100%;
+                                height:auto;
+                                max-height:100vh;
+                                aspect-ratio:4/3;
+                        }
+
+                        /* Preview thumbnails container */
+                        #capturePreview{
+                                display:flex;
+                                flex-wrap:wrap;
+                                gap:4px;
+                                margin-bottom:10px;
+                                max-width:100%;
+                                overflow-x:auto;
+                        }
+
+                        #progressContainer textarea[id^="capturePreview_"]{
+                                display:none;
+                        }
+
+                        .capture-thumb{
+                                width:64px;
+                                height:64px;
+                                object-fit:cover;
+                                border:1px solid #ccc;
+                                border-radius:4px;
+                                opacity:0;
+                                transition:opacity 0.3s ease;
+                        }
+
+                        .capture-thumb.show{ opacity:1; }
 			
 			/* Adapt video & snapshot to portrait (mobile) 9:16 ratio */
 			@media (orientation: portrait){
@@ -161,24 +187,6 @@
 					object-fit:cover;
 				}
 				
-				#capturePreview{
-					display:flex;
-					flex-wrap:wrap;
-					gap:4px;
-					margin-bottom:10px;
-					max-width:100%;
-					overflow-x:auto;
-				}
-				.capture-thumb{
-					width:64px;
-					height:64px;
-					object-fit:cover;
-					border:1px solid #ccc;
-					border-radius:4px;
-					opacity:0;
-					transition:opacity 0.3s ease;
-				}
-				.capture-thumb.show{ opacity:1; }
 			}
 			
 			#orientationOverlay{
@@ -466,8 +474,8 @@
 				<button id="restartBtn" class="ctrl-btn">Restart</button>
 				<button id="cancelBtn" class="ctrl-btn">Cancel</button>
 			</div>
-			<div id="capturePreview" style="display:none;"></div>
-		</div>
+                        <div id="capturePreview"></div>
+                </div>
 		<script>
 			function getParam(name) {
 				const params = new URLSearchParams(window.location.search);
