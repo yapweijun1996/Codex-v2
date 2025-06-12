@@ -693,7 +693,7 @@ var capturedFrames = [];
 var lastFaceImageData = null;
 var currentModalIndex = -1;
 
-function showModalImage(index) {
+function showModalImage(index, animate = false) {
     const modal = document.getElementById('imageModal');
     if (!modal || index < 0 || index >= capturedFrames.length) return;
     const wrapper = modal.querySelector('.slide-wrapper');
@@ -709,9 +709,13 @@ function showModalImage(index) {
     }
     modal.style.display = 'flex';
     currentModalIndex = index;
-    wrapper.style.transition = 'none';
+    if (!animate) {
+        wrapper.style.transition = 'none';
+    }
     wrapper.style.transform = `translateX(-${index * 100}%)`;
-    requestAnimationFrame(() => { wrapper.style.transition = ''; });
+    if (!animate) {
+        requestAnimationFrame(() => { wrapper.style.transition = ''; });
+    }
 }
 
 function startRegistrationTimer() {
@@ -1224,13 +1228,13 @@ document.addEventListener("DOMContentLoaded", async function(event) {
         if (prevBtn) prevBtn.addEventListener('click', e => {
             e.stopPropagation();
             if (currentModalIndex > 0) {
-                showModalImage(currentModalIndex - 1);
+                showModalImage(currentModalIndex - 1, true);
             }
         });
         if (nextBtn) nextBtn.addEventListener('click', e => {
             e.stopPropagation();
             if (currentModalIndex < capturedFrames.length - 1) {
-                showModalImage(currentModalIndex + 1);
+                showModalImage(currentModalIndex + 1, true);
             }
         });
         let dragStartX = null;
@@ -1253,9 +1257,9 @@ document.addEventListener("DOMContentLoaded", async function(event) {
             const threshold = modalEl.clientWidth * 0.25;
             if (Math.abs(dragOffsetX) > threshold) {
                 if (dragOffsetX < 0 && currentModalIndex < capturedFrames.length - 1) {
-                    showModalImage(currentModalIndex + 1);
+                    showModalImage(currentModalIndex + 1, true);
                 } else if (dragOffsetX > 0 && currentModalIndex > 0) {
-                    showModalImage(currentModalIndex - 1);
+                    showModalImage(currentModalIndex - 1, true);
                 } else {
                     wrapper.style.transform = `translateX(-${currentModalIndex * 100}%)`;
                 }
