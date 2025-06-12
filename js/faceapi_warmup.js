@@ -696,10 +696,22 @@ var currentModalIndex = -1;
 function showModalImage(index) {
     const modal = document.getElementById('imageModal');
     if (!modal || index < 0 || index >= capturedFrames.length) return;
-    const imgEl = modal.querySelector('img');
-    if (imgEl) imgEl.src = capturedFrames[index];
+    const wrapper = modal.querySelector('.slide-wrapper');
+    if (!wrapper) return;
+    // Build image elements if not already present
+    if (wrapper.children.length !== capturedFrames.length) {
+        wrapper.innerHTML = '';
+        capturedFrames.forEach(src => {
+            const img = document.createElement('img');
+            img.src = src;
+            wrapper.appendChild(img);
+        });
+    }
     modal.style.display = 'flex';
     currentModalIndex = index;
+    wrapper.style.transition = 'none';
+    wrapper.style.transform = `translateX(-${index * 100}%)`;
+    requestAnimationFrame(() => { wrapper.style.transition = ''; });
 }
 
 function startRegistrationTimer() {
@@ -1223,32 +1235,32 @@ document.addEventListener("DOMContentLoaded", async function(event) {
         });
         let dragStartX = null;
         let dragOffsetX = 0;
-        const modalImg = modalEl.querySelector('img');
+        const wrapper = modalEl.querySelector('.slide-wrapper');
         function onStart(e) {
             dragStartX = e.clientX;
             dragOffsetX = 0;
-            if (modalImg) modalImg.style.transition = 'none';
+            if (wrapper) wrapper.style.transition = 'none';
         }
         function onMove(e) {
-            if (dragStartX === null) return;
+            if (dragStartX === null || !wrapper) return;
             dragOffsetX = e.clientX - dragStartX;
-            if (modalImg) modalImg.style.transform = `translateX(${dragOffsetX}px)`;
+            wrapper.style.transform = `translateX(calc(-${currentModalIndex * 100}% + ${dragOffsetX}px))`;
             if (e.cancelable) e.preventDefault();
         }
         function onEnd() {
-            if (dragStartX === null) return;
-            if (modalImg) modalImg.style.transition = '';
-            const threshold = modalImg ? modalImg.clientWidth * 0.25 : 30;
+            if (dragStartX === null || !wrapper) return;
+            wrapper.style.transition = '';
+            const threshold = modalEl.clientWidth * 0.25;
             if (Math.abs(dragOffsetX) > threshold) {
                 if (dragOffsetX < 0 && currentModalIndex < capturedFrames.length - 1) {
                     showModalImage(currentModalIndex + 1);
                 } else if (dragOffsetX > 0 && currentModalIndex > 0) {
                     showModalImage(currentModalIndex - 1);
-                } else if (modalImg) {
-                    modalImg.style.transform = '';
+                } else {
+                    wrapper.style.transform = `translateX(-${currentModalIndex * 100}%)`;
                 }
-            } else if (modalImg) {
-                modalImg.style.transform = '';
+            } else {
+                wrapper.style.transform = `translateX(-${currentModalIndex * 100}%)`;
             }
             dragStartX = null;
             dragOffsetX = 0;

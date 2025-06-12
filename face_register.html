@@ -395,6 +395,16 @@
                                 max-height:90%;
                                 transition:transform 0.3s ease;
                         }
+                        .slide-wrapper{
+                                display:flex;
+                                overflow:hidden;
+                                transition:transform 0.3s ease;
+                        }
+                        .slide-wrapper img{
+                                flex:0 0 100%;
+                                max-width:90%;
+                                max-height:90%;
+                        }
                         .modal .prev,
                         .modal .next{
                                 position:absolute;
@@ -510,7 +520,7 @@
                 <div id="imageModal" class="modal">
                         <span class="close">&times;</span>
                         <span class="prev">&#10094;</span>
-                        <img>
+                        <div class="slide-wrapper"></div>
                         <span class="next">&#10095;</span>
                 </div>
                 <script>
