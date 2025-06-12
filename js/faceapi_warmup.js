@@ -189,7 +189,7 @@ function updateProgress() {
     const retake = document.getElementById('retakeBtn');
     const restart = document.getElementById('restartBtn');
     if (retake) retake.style.display = show ? 'inline-block' : 'none';
-    if (restart) restart.style.display = show ? 'inline-block' : 'none';
+    if (restart) restart.style.display = 'inline-block';
 }
 
 function addCapturePreview(dataUrl) {
@@ -238,6 +238,8 @@ function restartRegistration() {
     registrationStartTime = null;
     registrationCompleted = false;
     faceapi_action = 'register';
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (downloadBtn) downloadBtn.style.display = 'none';
     updateProgress();
     clearProgress();
     [canvasId, canvasId2, canvasId3, canvasOutputId].forEach(id => {
@@ -262,10 +264,33 @@ function cancelRegistration() {
     capturedFrames = [];
     const preview = document.getElementById('capturePreview');
     if (preview) preview.innerHTML = '';
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (downloadBtn) downloadBtn.style.display = 'none';
     updateProgress();
     clearProgress();
     const container = document.querySelector('.face-detection-container');
     if (container) container.style.display = 'none';
+}
+
+function downloadRegistrationData() {
+    if (currentUserDescriptors.length === 0) return;
+    const meanDescriptor = computeMeanDescriptor(currentUserDescriptors);
+    const downloadData = [{
+        id: currentUserId,
+        name: currentUserName,
+        descriptors: [
+            ...currentUserDescriptors.map(d => Array.from(d)),
+            Array.from(meanDescriptor)
+        ]
+    }];
+    const jsonData = JSON.stringify(downloadData, null, 2);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'faceid_with_users.json';
+    link.click();
+    URL.revokeObjectURL(url);
 }
 
 function isConsistentWithCurrentUser(descriptor) {
@@ -817,42 +842,10 @@ function faceapi_register(descriptor) {
             stopRegistrationTimer();
             faceapi_action = null;
             camera_stop();
-            clearProgress();
-            const meanDescriptor = computeMeanDescriptor(currentUserDescriptors);
-            const downloadData = [{
-                id: currentUserId,
-                name: currentUserName,
-                descriptors: [
-                    ...currentUserDescriptors.map(d => Array.from(d)),
-                    Array.from(meanDescriptor)
-                ]
-            }];
-            // Trigger download of per-capture JSON
-            const jsonData = JSON.stringify(downloadData, null, 2);
-            const blob = new Blob([jsonData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const downloadLink = document.createElement('a');
-            downloadLink.href = url;
-            downloadLink.download = 'faceid_with_users.json';
-            downloadLink.click();
-            URL.revokeObjectURL(url);
-            // Flatten descriptors for verification
-            flatRegisteredDescriptors = [];
-            flatRegisteredUserMeta = [];
-            downloadData.forEach(userObj => {
-                userObj.descriptors.forEach(descArr => {
-                    flatRegisteredDescriptors.push(new Float32Array(descArr));
-                    flatRegisteredUserMeta.push({ id: userObj.id, name: userObj.name });
-                });
-            });
-            registeredDescriptors = flatRegisteredDescriptors;
-            logCalibrationSummary();
-            // Reset for next registration if needed
-            currentUserDescriptors = [];
-            capturedFrames = [];
-            lastFaceImageData = null;
-            const preview = document.getElementById('capturePreview');
-            if (preview) preview.innerHTML = '';
+            const container = document.getElementById('progressContainer');
+            if (container) container.classList.add('expanded');
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (downloadBtn) downloadBtn.style.display = 'inline-block';
             updateProgress();
         }
     }
@@ -1192,9 +1185,11 @@ document.addEventListener("DOMContentLoaded", async function(event) {
     const retake = document.getElementById('retakeBtn');
     const restart = document.getElementById('restartBtn');
     const cancel = document.getElementById('cancelBtn');
+    const download = document.getElementById('downloadBtn');
     if (retake) retake.addEventListener('click', retakeLastCapture);
     if (restart) restart.addEventListener('click', restartRegistration);
     if (cancel) cancel.addEventListener('click', cancelRegistration);
+    if (download) download.addEventListener('click', downloadRegistrationData);
     // ----- Preview thumbnail interaction -----
     // Each captured frame is rendered as a small thumbnail inside the progress
     // container.  When the user taps on a thumbnail we want to show a larger
