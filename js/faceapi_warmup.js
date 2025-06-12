@@ -709,6 +709,7 @@ function showModalImage(index, animate = false) {
             wrapper.appendChild(img);
         });
     }
+    wrapper.style.width = capturedFrames.length * 100 + '%';
     modal.style.display = 'flex';
     currentModalIndex = index;
     if (!animate) {
