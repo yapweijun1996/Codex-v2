@@ -549,8 +549,10 @@
                                         container.classList.toggle('expanded');
                                         if(container.classList.contains('expanded')){
                                                 video.pause();
+                                                if(typeof pauseRegistrationTimer === 'function') pauseRegistrationTimer();
                                         } else {
                                                 video.play();
+                                                if(typeof resumeRegistrationTimer === 'function') resumeRegistrationTimer();
                                         }
                                         e.stopPropagation();
                                 });
@@ -560,6 +562,7 @@
                                                 container.classList.remove('expanded');
                                                 if(wasExpanded){
                                                         video.play();
+                                                        if(typeof resumeRegistrationTimer === 'function') resumeRegistrationTimer();
                                                 }
                                         }
                                 });

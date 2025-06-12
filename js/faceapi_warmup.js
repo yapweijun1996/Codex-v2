@@ -740,6 +740,25 @@ function stopRegistrationTimer(triggerTimeout = false) {
     }
 }
 
+function pauseRegistrationTimer() {
+    if (registrationTimer) {
+        clearInterval(registrationTimer);
+        registrationTimer = null;
+    }
+}
+
+function resumeRegistrationTimer() {
+    if (!registrationTimer && timeLeft > 0) {
+        registrationTimer = setInterval(() => {
+            timeLeft--;
+            updateTimerText();
+            if (timeLeft <= 0) {
+                stopRegistrationTimer(true);
+            }
+        }, 1000);
+    }
+}
+
 function faceapi_register(descriptor) {
     if (!descriptor || registrationCompleted) {
         return;
@@ -1198,6 +1217,7 @@ document.addEventListener("DOMContentLoaded", async function(event) {
                 if (progressContainer && !progressContainer.classList.contains('expanded')) {
                     progressContainer.classList.add('expanded');
                     if (video) video.pause();
+                    if (typeof pauseRegistrationTimer === 'function') pauseRegistrationTimer();
                 }
 
                 showModalImage(parseInt(e.target.dataset.index));
