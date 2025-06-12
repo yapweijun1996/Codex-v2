@@ -1238,7 +1238,8 @@ document.addEventListener("DOMContentLoaded", async function(event) {
         function onEnd() {
             if (dragStartX === null) return;
             if (modalImg) modalImg.style.transition = '';
-            if (Math.abs(dragOffsetX) > 30) {
+            const threshold = modalImg ? modalImg.clientWidth * 0.25 : 30;
+            if (Math.abs(dragOffsetX) > threshold) {
                 if (dragOffsetX < 0 && currentModalIndex < capturedFrames.length - 1) {
                     showModalImage(currentModalIndex + 1);
                 } else if (dragOffsetX > 0 && currentModalIndex > 0) {
