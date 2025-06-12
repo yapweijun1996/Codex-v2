@@ -198,6 +198,7 @@ function addCapturePreview(dataUrl) {
     if (!preview) return;
     const img = document.createElement('img');
     img.src = dataUrl;
+    img.alt = 'Captured face thumbnail';
     img.className = 'capture-thumb';
     img.dataset.index = capturedFrames.length - 1;
     preview.appendChild(img);
@@ -701,9 +702,10 @@ function showModalImage(index, animate = false) {
     // Build image elements if not already present
     if (wrapper.children.length !== capturedFrames.length) {
         wrapper.innerHTML = '';
-        capturedFrames.forEach(src => {
+        capturedFrames.forEach((src, idx) => {
             const img = document.createElement('img');
             img.src = src;
+            img.alt = 'Captured face ' + (idx + 1);
             wrapper.appendChild(img);
         });
     }
@@ -1129,9 +1131,10 @@ async function initWorker() {
 
 function faceapi_warmup() {
 	var img_face_for_loading = imgFaceFilePathForWarmup;
-	if (img_face_for_loading) {
-		var img = new Image();
-		img.src = img_face_for_loading;
+        if (img_face_for_loading) {
+                var img = new Image();
+                img.alt = 'Warmup image';
+                img.src = img_face_for_loading;
 		img.onload = () => {
 			
 			// Create the canvas element
