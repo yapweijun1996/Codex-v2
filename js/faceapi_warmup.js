@@ -1222,7 +1222,6 @@ document.addEventListener("DOMContentLoaded", async function(event) {
     }
     const modalEl = document.getElementById('imageModal');
     if (modalEl) {
-        modalEl.style.touchAction = 'none';
         const prevBtn = modalEl.querySelector('.prev');
         const nextBtn = modalEl.querySelector('.next');
         if (prevBtn) prevBtn.addEventListener('click', e => {
@@ -1237,42 +1236,23 @@ document.addEventListener("DOMContentLoaded", async function(event) {
                 showModalImage(currentModalIndex + 1, true);
             }
         });
-        let dragStartX = null;
-        let dragOffsetX = 0;
-        const wrapper = modalEl.querySelector('.slide-wrapper');
-        function onStart(e) {
-            dragStartX = e.clientX;
-            dragOffsetX = 0;
-            if (wrapper) wrapper.style.transition = 'none';
-        }
-        function onMove(e) {
-            if (dragStartX === null || !wrapper) return;
-            dragOffsetX = e.clientX - dragStartX;
-            wrapper.style.transform = `translateX(calc(-${currentModalIndex * 100}% + ${dragOffsetX}px))`;
-            if (e.cancelable) e.preventDefault();
-        }
-        function onEnd() {
-            if (dragStartX === null || !wrapper) return;
-            wrapper.style.transition = '';
+        let swipeStartX = null;
+        modalEl.addEventListener('pointerdown', e => {
+            swipeStartX = e.clientX;
+        });
+        modalEl.addEventListener('pointerup', e => {
+            if (swipeStartX === null) return;
+            const diff = e.clientX - swipeStartX;
             const threshold = modalEl.clientWidth * 0.25;
-            if (Math.abs(dragOffsetX) > threshold) {
-                if (dragOffsetX < 0 && currentModalIndex < capturedFrames.length - 1) {
+            if (Math.abs(diff) > threshold) {
+                if (diff < 0 && currentModalIndex < capturedFrames.length - 1) {
                     showModalImage(currentModalIndex + 1, true);
-                } else if (dragOffsetX > 0 && currentModalIndex > 0) {
+                } else if (diff > 0 && currentModalIndex > 0) {
                     showModalImage(currentModalIndex - 1, true);
-                } else {
-                    wrapper.style.transform = `translateX(-${currentModalIndex * 100}%)`;
                 }
-            } else {
-                wrapper.style.transform = `translateX(-${currentModalIndex * 100}%)`;
             }
-            dragStartX = null;
-            dragOffsetX = 0;
-        }
-
-        modalEl.addEventListener('pointerdown', onStart);
-        modalEl.addEventListener('pointermove', onMove);
-        modalEl.addEventListener('pointerup', onEnd);
+            swipeStartX = null;
+        });
         modalEl.addEventListener('click', e => {
             if (e.target === modalEl || e.target.classList.contains('close')) {
                 modalEl.style.display = 'none';
