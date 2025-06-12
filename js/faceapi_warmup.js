@@ -1228,6 +1228,7 @@ document.addEventListener("DOMContentLoaded", async function(event) {
     if (modalEl) {
         const prevBtn = modalEl.querySelector('.prev');
         const nextBtn = modalEl.querySelector('.next');
+        const imgInModal = modalEl.querySelector('img');
         if (prevBtn) prevBtn.addEventListener('click', e => {
             e.stopPropagation();
             if (currentModalIndex > 0) {
@@ -1239,6 +1240,9 @@ document.addEventListener("DOMContentLoaded", async function(event) {
             if (currentModalIndex < capturedFrames.length - 1) {
                 showModalImage(currentModalIndex + 1);
             }
+        });
+        if (imgInModal) imgInModal.addEventListener('click', e => {
+            e.stopPropagation();
         });
         let touchStartX = 0;
         modalEl.addEventListener('touchstart', e => {
