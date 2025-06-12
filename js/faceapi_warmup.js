@@ -1206,6 +1206,7 @@ document.addEventListener("DOMContentLoaded", async function(event) {
     }
     const modalEl = document.getElementById('imageModal');
     if (modalEl) {
+        modalEl.style.touchAction = 'none';
         const prevBtn = modalEl.querySelector('.prev');
         const nextBtn = modalEl.querySelector('.next');
         if (prevBtn) prevBtn.addEventListener('click', e => {
@@ -1224,15 +1225,13 @@ document.addEventListener("DOMContentLoaded", async function(event) {
         let dragOffsetX = 0;
         const modalImg = modalEl.querySelector('img');
         function onStart(e) {
-            const pt = e.touches ? e.touches[0] : e;
-            dragStartX = pt.screenX;
+            dragStartX = e.clientX;
             dragOffsetX = 0;
             if (modalImg) modalImg.style.transition = 'none';
         }
         function onMove(e) {
             if (dragStartX === null) return;
-            const pt = e.touches ? e.touches[0] : e;
-            dragOffsetX = pt.screenX - dragStartX;
+            dragOffsetX = e.clientX - dragStartX;
             if (modalImg) modalImg.style.transform = `translateX(${dragOffsetX}px)`;
             if (e.cancelable) e.preventDefault();
         }
@@ -1254,9 +1253,6 @@ document.addEventListener("DOMContentLoaded", async function(event) {
             dragOffsetX = 0;
         }
 
-        modalEl.addEventListener('touchstart', onStart, { passive: true });
-        modalEl.addEventListener('touchmove', onMove, { passive: false });
-        modalEl.addEventListener('touchend', onEnd);
         modalEl.addEventListener('pointerdown', onStart);
         modalEl.addEventListener('pointermove', onMove);
         modalEl.addEventListener('pointerup', onEnd);
