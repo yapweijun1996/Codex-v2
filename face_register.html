@@ -406,7 +406,8 @@
                                 max-height:90%;
                         }
                         .modal .prev,
-                        .modal .next{
+                        .modal .next,
+                        .modal .close{
                                 position:absolute;
                                 top:50%;
                                 transform:translateY(-50%);
@@ -418,6 +419,11 @@
                         }
                         .modal .prev{ left:10px; }
                         .modal .next{ right:10px; }
+                        .modal .close{
+                                top:10px;
+                                right:10px;
+                                transform:none;
+                        }
                 </style>
 		
 		<!-- Load face-api core library first -->
