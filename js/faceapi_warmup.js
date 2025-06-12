@@ -17,7 +17,7 @@
  *
  * The registration UI shows a progress panel containing thumbnail previews of
  * each captured frame.  Users can tap these thumbnails to view them in a modal
- * while the underlying video feed is paused.  Progress is persisted in
+ * while the underlying video feed is paused.  Progress is persisted in 
  * IndexedDB so a partially completed registration survives a page reload.
  */
 var videoId = "video";
@@ -198,7 +198,6 @@ function addCapturePreview(dataUrl) {
     if (!preview) return;
     const img = document.createElement('img');
     img.src = dataUrl;
-    img.alt = 'Captured face thumbnail';
     img.className = 'capture-thumb';
     img.dataset.index = capturedFrames.length - 1;
     preview.appendChild(img);
@@ -694,31 +693,13 @@ var capturedFrames = [];
 var lastFaceImageData = null;
 var currentModalIndex = -1;
 
-function showModalImage(index, animate = false) {
+function showModalImage(index) {
     const modal = document.getElementById('imageModal');
     if (!modal || index < 0 || index >= capturedFrames.length) return;
-    const wrapper = modal.querySelector('.slide-wrapper');
-    if (!wrapper) return;
-    // Build image elements if not already present
-    if (wrapper.children.length !== capturedFrames.length) {
-        wrapper.innerHTML = '';
-        capturedFrames.forEach((src, idx) => {
-            const img = document.createElement('img');
-            img.src = src;
-            img.alt = 'Captured face ' + (idx + 1);
-            wrapper.appendChild(img);
-        });
-    }
-    wrapper.style.width = capturedFrames.length * 100 + '%';
+    const imgEl = modal.querySelector('img');
+    if (imgEl) imgEl.src = capturedFrames[index];
     modal.style.display = 'flex';
     currentModalIndex = index;
-    if (!animate) {
-        wrapper.style.transition = 'none';
-    }
-    wrapper.style.transform = `translateX(-${index * 100}%)`;
-    if (!animate) {
-        requestAnimationFrame(() => { wrapper.style.transition = ''; });
-    }
 }
 
 function startRegistrationTimer() {
@@ -1132,10 +1113,9 @@ async function initWorker() {
 
 function faceapi_warmup() {
 	var img_face_for_loading = imgFaceFilePathForWarmup;
-        if (img_face_for_loading) {
-                var img = new Image();
-                img.alt = 'Warmup image';
-                img.src = img_face_for_loading;
+	if (img_face_for_loading) {
+		var img = new Image();
+		img.src = img_face_for_loading;
 		img.onload = () => {
 			
 			// Create the canvas element
@@ -1231,31 +1211,32 @@ document.addEventListener("DOMContentLoaded", async function(event) {
         if (prevBtn) prevBtn.addEventListener('click', e => {
             e.stopPropagation();
             if (currentModalIndex > 0) {
-                showModalImage(currentModalIndex - 1, true);
+                showModalImage(currentModalIndex - 1);
             }
         });
         if (nextBtn) nextBtn.addEventListener('click', e => {
             e.stopPropagation();
             if (currentModalIndex < capturedFrames.length - 1) {
-                showModalImage(currentModalIndex + 1, true);
+                showModalImage(currentModalIndex + 1);
             }
         });
-        let swipeStartX = null;
-        modalEl.addEventListener('pointerdown', e => {
-            swipeStartX = e.clientX;
+        let touchStartX = 0;
+        modalEl.addEventListener('touchstart', e => {
+            if (e.touches && e.touches.length > 0) {
+                touchStartX = e.touches[0].screenX;
+            }
         });
-        modalEl.addEventListener('pointerup', e => {
-            if (swipeStartX === null) return;
-            const diff = e.clientX - swipeStartX;
-            const threshold = modalEl.clientWidth * 0.25;
-            if (Math.abs(diff) > threshold) {
-                if (diff < 0 && currentModalIndex < capturedFrames.length - 1) {
-                    showModalImage(currentModalIndex + 1, true);
-                } else if (diff > 0 && currentModalIndex > 0) {
-                    showModalImage(currentModalIndex - 1, true);
+        modalEl.addEventListener('touchend', e => {
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                const diff = e.changedTouches[0].screenX - touchStartX;
+                if (Math.abs(diff) > 30) {
+                    if (diff < 0 && currentModalIndex < capturedFrames.length - 1) {
+                        showModalImage(currentModalIndex + 1);
+                    } else if (diff > 0 && currentModalIndex > 0) {
+                        showModalImage(currentModalIndex - 1);
+                    }
                 }
             }
-            swipeStartX = null;
         });
         modalEl.addEventListener('click', e => {
             if (e.target === modalEl || e.target.classList.contains('close')) {

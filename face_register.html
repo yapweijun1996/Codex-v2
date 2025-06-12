@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<meta charset="UTF-8">
+		<meta charset="UTF-8"> 
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 		<title>Face Detection</title>
 		<link rel="manifest" href="manifest.json">
@@ -393,22 +393,9 @@
                         .modal img{
                                 max-width:90%;
                                 max-height:90%;
-                                transition:transform 0.3s ease;
-                        }
-                        .slide-wrapper{
-                                display:flex;
-                                overflow:hidden;
-                                transition:transform 0.3s ease;
-                        }
-                        .slide-wrapper img{
-                                flex:0 0 100%;
-                                width:100%;
-                                max-height:90%;
-                                object-fit:contain;
                         }
                         .modal .prev,
-                        .modal .next,
-                        .modal .close{
+                        .modal .next{
                                 position:absolute;
                                 top:50%;
                                 transform:translateY(-50%);
@@ -420,11 +407,6 @@
                         }
                         .modal .prev{ left:10px; }
                         .modal .next{ right:10px; }
-                        .modal .close{
-                                top:10px;
-                                right:10px;
-                                transform:none;
-                        }
                 </style>
 		
 		<!-- Load face-api core library first -->
@@ -527,7 +509,7 @@
                 <div id="imageModal" class="modal">
                         <span class="close">&times;</span>
                         <span class="prev">&#10094;</span>
-                        <div class="slide-wrapper"></div>
+                        <img>
                         <span class="next">&#10095;</span>
                 </div>
                 <script>
