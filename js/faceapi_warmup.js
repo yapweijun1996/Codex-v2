@@ -1220,24 +1220,46 @@ document.addEventListener("DOMContentLoaded", async function(event) {
                 showModalImage(currentModalIndex + 1);
             }
         });
-        let touchStartX = 0;
-        modalEl.addEventListener('touchstart', e => {
-            if (e.touches && e.touches.length > 0) {
-                touchStartX = e.touches[0].screenX;
-            }
-        });
-        modalEl.addEventListener('touchend', e => {
-            if (e.changedTouches && e.changedTouches.length > 0) {
-                const diff = e.changedTouches[0].screenX - touchStartX;
-                if (Math.abs(diff) > 30) {
-                    if (diff < 0 && currentModalIndex < capturedFrames.length - 1) {
-                        showModalImage(currentModalIndex + 1);
-                    } else if (diff > 0 && currentModalIndex > 0) {
-                        showModalImage(currentModalIndex - 1);
-                    }
+        let dragStartX = null;
+        let dragOffsetX = 0;
+        const modalImg = modalEl.querySelector('img');
+        function onStart(e) {
+            const pt = e.touches ? e.touches[0] : e;
+            dragStartX = pt.screenX;
+            dragOffsetX = 0;
+            if (modalImg) modalImg.style.transition = 'none';
+        }
+        function onMove(e) {
+            if (dragStartX === null) return;
+            const pt = e.touches ? e.touches[0] : e;
+            dragOffsetX = pt.screenX - dragStartX;
+            if (modalImg) modalImg.style.transform = `translateX(${dragOffsetX}px)`;
+            if (e.cancelable) e.preventDefault();
+        }
+        function onEnd() {
+            if (dragStartX === null) return;
+            if (modalImg) modalImg.style.transition = '';
+            if (Math.abs(dragOffsetX) > 30) {
+                if (dragOffsetX < 0 && currentModalIndex < capturedFrames.length - 1) {
+                    showModalImage(currentModalIndex + 1);
+                } else if (dragOffsetX > 0 && currentModalIndex > 0) {
+                    showModalImage(currentModalIndex - 1);
+                } else if (modalImg) {
+                    modalImg.style.transform = '';
                 }
+            } else if (modalImg) {
+                modalImg.style.transform = '';
             }
-        });
+            dragStartX = null;
+            dragOffsetX = 0;
+        }
+
+        modalEl.addEventListener('touchstart', onStart, { passive: true });
+        modalEl.addEventListener('touchmove', onMove, { passive: false });
+        modalEl.addEventListener('touchend', onEnd);
+        modalEl.addEventListener('pointerdown', onStart);
+        modalEl.addEventListener('pointermove', onMove);
+        modalEl.addEventListener('pointerup', onEnd);
         modalEl.addEventListener('click', e => {
             if (e.target === modalEl || e.target.classList.contains('close')) {
                 modalEl.style.display = 'none';
