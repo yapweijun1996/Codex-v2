@@ -319,14 +319,17 @@
                                 flex-wrap:wrap;
                                 overflow-y:auto;
                         }
-			.ctrl-btn{
-				padding:14px 18px;
-				font-size:1.1rem;
-				border:none;
-				border-radius:6px;
-				background:#4CAF50;
-				color:#fff;
-			}
+                        .ctrl-btn{
+                                padding:14px 18px;
+                                font-size:1.1rem;
+                                border:none;
+                                border-radius:6px;
+                                background:#4CAF50;
+                                color:#fff;
+                        }
+                        .ctrl-btn-warning{ background:#FFC107; }
+                        .ctrl-btn-danger{ background:#F44336; }
+                        .ctrl-btn-success{ background:#4CAF50; }
 			.ctrl-btn:active{
 				transform:scale(0.97);
 			}
@@ -506,9 +509,9 @@
 				<div style="display:none;">
 					<button id="retakeBtn" class="ctrl-btn">Retake Last</button>
 				</div>
-				<button id="restartBtn" class="ctrl-btn">Restart</button>
-                                <button id="downloadBtn" class="ctrl-btn" style="display:none;">Download</button>
-                                <button id="cancelBtn" class="ctrl-btn">Cancel</button>
+                                <button id="restartBtn" class="ctrl-btn ctrl-btn-warning">Restart</button>
+                                <button id="cancelBtn" class="ctrl-btn ctrl-btn-danger">Cancel</button>
+                                <button id="downloadBtn" class="ctrl-btn ctrl-btn-success" style="display:none;">Download</button>
 			</div>
                 <div id="capturePreview"></div>
                 </div>
