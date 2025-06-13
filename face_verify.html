@@ -125,6 +125,7 @@
 			#verifyProgressContainer.expanded #verifyProgressButtons{
 				max-height:200px;
 				opacity:1;
+				overflow: auto;
 			}
 			#verifyProgressContainer.expanded #verifyCapturePreview{
 				flex-wrap:wrap;
@@ -299,7 +300,7 @@
 				<button id="verifyRestartBtn" class="ctrl-btn ctrl-btn-warning">Restart</button>
 				<button id="verifyCancelBtn" class="ctrl-btn ctrl-btn-danger">Cancel</button>
 				<button id="verifyDownloadBtn" class="ctrl-btn ctrl-btn-success" style="display:none;">Download</button>
-				<div><ul id="verifyPersonList"></ul></div>
+				<div style="width:100%;"><ul id="verifyPersonList"></ul></div>
 			</div>
 			<div id="verifyCapturePreview"></div>
 		</div>
