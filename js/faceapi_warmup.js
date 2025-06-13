@@ -242,14 +242,7 @@ function restartRegistration() {
     if (downloadBtn) downloadBtn.style.display = 'none';
     updateProgress();
     clearProgress();
-    [canvasId, canvasId2, canvasId3, canvasOutputId].forEach(id => {
-        const c = document.getElementById(id);
-        if (c) {
-            const ctx = c.getContext('2d');
-            ctx.clearRect(0, 0, c.width, c.height);
-            c.style.display = 'none';
-        }
-    });
+    clear_all_canvases();
     const container = document.querySelector('.face-detection-container');
     if (container) container.style.display = 'flex';
     camera_start();
@@ -268,6 +261,7 @@ function cancelRegistration() {
     if (downloadBtn) downloadBtn.style.display = 'none';
     updateProgress();
     clearProgress();
+    clear_all_canvases();
     const container = document.querySelector('.face-detection-container');
     if (container) container.style.display = 'none';
 }
@@ -706,6 +700,20 @@ function clear_boxes() {
     canvas.style.display = 'none';
 }
 
+/**
+ * Clears all overlay canvases used during detection/registration.
+ */
+function clear_all_canvases() {
+    [canvasId, canvasId2, canvasId3, canvasOutputId].forEach(id => {
+        const c = document.getElementById(id);
+        if (c) {
+            const ctx = c.getContext('2d');
+            ctx.clearRect(0, 0, c.width, c.height);
+            c.style.display = 'none';
+        }
+    });
+}
+
 var registeredDescriptors = [];
 var maxCaptures = 20;
 var registrationCompleted = false;
@@ -842,6 +850,7 @@ function faceapi_register(descriptor) {
             stopRegistrationTimer();
             faceapi_action = null;
             camera_stop();
+            clear_all_canvases();
             const container = document.getElementById('progressContainer');
             if (container) container.classList.add('expanded');
             const downloadBtn = document.getElementById('downloadBtn');
