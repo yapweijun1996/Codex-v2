@@ -195,7 +195,7 @@ function updateProgress() {
 function updateVerifyProgress() {
     const el = document.getElementById('verifyProgressText');
     if (el) {
-        el.innerText = `${verifiedCount}/${totalVerifyFaces} verified`;
+        el.innerText = `${verifiedCount}/${totalVerifyFaces} verified.`;
     }
     const fill = document.getElementById('verifyProgressFill');
     if (fill) {
@@ -280,7 +280,7 @@ function cancelRegistration() {
 
 function restartVerification() {
     verifiedCount = 0;
-    verifiedIndices = new Set();
+    verifiedUserIds = new Set();
     verificationCompleted = false;
     updateVerifyProgress();
     faceapi_action = 'verify';
@@ -292,7 +292,7 @@ function cancelVerification() {
     faceapi_action = null;
     verificationCompleted = true;
     verifiedCount = 0;
-    verifiedIndices = new Set();
+    verifiedUserIds = new Set();
     updateVerifyProgress();
 }
 
@@ -477,7 +477,11 @@ async function load_face_descriptor_json(warmupFaceDescriptorJson, merge = false
             flatRegisteredDescriptors = [];
             flatRegisteredUserMeta = [];
             registeredUsers.forEach(user => {
-                user.descriptors.forEach(descArr => {
+                user.descriptors.forEach((descArr, idx) => {
+                    if (idx === user.descriptors.length - 1 && user.descriptors.length > 1) {
+                        // Skip mean descriptor to reduce matching overhead
+                        return;
+                    }
                     flatRegisteredDescriptors.push(new Float32Array(descArr));
                     flatRegisteredUserMeta.push({ id: user.id, name: user.name });
                 });
@@ -497,9 +501,9 @@ async function load_face_descriptor_json(warmupFaceDescriptorJson, merge = false
             flatRegisteredUserMeta = descriptors.map(() => ({ id: null, name: null }));
         }
 
-        totalVerifyFaces = flatRegisteredDescriptors.length;
+        totalVerifyFaces = registeredUsers.length;
         verifiedCount = 0;
-        verifiedIndices = new Set();
+        verifiedUserIds = new Set();
         updateVerifyProgress();
 
         camera_start();
@@ -756,7 +760,7 @@ var registrationCompleted = false;
 var verificationCompleted = false;
 var totalVerifyFaces = 0;
 var verifiedCount = 0;
-var verifiedIndices = new Set();
+var verifiedUserIds = new Set();
 var registrationStartTime = null;
 var registrationTimeout = 1 * 60 * 1000; // 1 minute
 var registrationTimer = null;
@@ -928,8 +932,9 @@ function faceapi_verify(descriptor){
         
         if (matchFound) {
             const userMeta = flatRegisteredUserMeta[matchedIndex] || { name: 'Unknown', id: 'Unknown' };
-            if (!verifiedIndices.has(matchedIndex)) {
-                verifiedIndices.add(matchedIndex);
+            const uid = userMeta.id;
+            if (uid && !verifiedUserIds.has(uid)) {
+                verifiedUserIds.add(uid);
                 verifiedCount++;
                 updateVerifyProgress();
                 if (verifiedCount >= totalVerifyFaces) {
