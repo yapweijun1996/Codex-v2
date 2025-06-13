@@ -174,6 +174,19 @@ function showMessage(type, message) {
     }
 }
 
+function showVerifyToast(message) {
+    const toast = document.getElementById('verifyToast');
+    if (!toast) return;
+    toast.innerText = message;
+    toast.classList.add('show');
+    if (toast._hideTimer) {
+        clearTimeout(toast._hideTimer);
+    }
+    toast._hideTimer = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
 
 function updateProgress() {
     const el = document.getElementById('progressText');
@@ -937,11 +950,12 @@ function faceapi_verify(descriptor){
                 verifiedUserIds.add(uid);
                 verifiedCount++;
                 updateVerifyProgress();
+                showVerifyToast(`${userMeta.name} (${userMeta.id}) detected`);
                 if (verifiedCount >= totalVerifyFaces) {
                     camera_stop();
                     verificationCompleted = true;
                     faceapi_action = null;
-                    alert('Verification complete');
+                    if (typeof showVerifyCompleteOverlay === 'function') showVerifyCompleteOverlay();
                 }
             }
             if (multiple_face_detection_yn !== "y") {
