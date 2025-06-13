@@ -150,6 +150,23 @@
                                 transition:opacity 0.3s ease;
                         }
                         .capture-thumb.show{ opacity:1; }
+                        #verifyPersonList{
+                                list-style:none;
+                                padding:0;
+                                margin:4px 0;
+                                width:100%;
+                                font-size:0.9rem;
+                        }
+                        #verifyPersonList li{
+                                display:flex;
+                                justify-content:space-between;
+                                padding:2px 4px;
+                                border-bottom:1px solid #ccc;
+                        }
+                        #verifyPersonList li.verified{
+                                background:#d4ffd4;
+                                font-weight:bold;
+                        }
                         .ctrl-btn{
                                 padding:14px 18px;
                                 font-size:1.1rem;
@@ -282,6 +299,7 @@
                                 <button id="verifyCancelBtn" class="ctrl-btn ctrl-btn-danger">Cancel</button>
                                 <button id="verifyDownloadBtn" class="ctrl-btn ctrl-btn-success" style="display:none;">Download</button>
                         </div>
+                        <ul id="verifyPersonList"></ul>
                 <div id="verifyCapturePreview"></div>
                 </div>
 		
