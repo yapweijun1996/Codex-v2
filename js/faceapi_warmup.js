@@ -323,6 +323,7 @@ function cancelVerification() {
         });
     }
     updateVerifyProgress();
+    clear_all_canvases();
 }
 
 function downloadRegistrationData() {
@@ -990,6 +991,7 @@ function faceapi_verify(descriptor){
                     verificationCompleted = true;
                     faceapi_action = null;
                     if (typeof showVerifyCompleteOverlay === 'function') showVerifyCompleteOverlay();
+                    clear_all_canvases();
                 }
             }
             if (multiple_face_detection_yn !== "y") {
