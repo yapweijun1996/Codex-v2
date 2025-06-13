@@ -9,7 +9,7 @@
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black">
 		<link rel="apple-touch-icon" href="icons/icon-192.png">
-		<style>
+                <style>
 			html,body{margin:0;padding:0;height:100%}
                         body{font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;align-items:center;gap:1rem;touch-action:manipulation;background:#f4f4f9;color:#333}
 			h1{font-size:1.8rem}
@@ -85,10 +85,94 @@
 			}
 			
 			/* Mirror only the video feed horizontally */
-			#video {
-				transform: scaleX(-1);
-			}
-		</style>
+                        #video {
+                                transform: scaleX(-1);
+                        }
+
+                        .controls{
+                                display:flex;
+                                flex-wrap:wrap;
+                                gap:0.5rem;
+                                margin:10px 0;
+                                justify-content:center;
+                                align-items:center;
+                        }
+                        #verifyProgressContainer{
+                                position:fixed;
+                                bottom:0;
+                                left:0;
+                                width:100%;
+                                z-index:999;
+                                background:rgba(255,255,255,0.8);
+                                box-shadow:0 -2px 4px rgba(0,0,0,0.1);
+                                padding:0.5rem;
+                                margin: 0 auto;
+                                border-radius: 25px 25px 0px 0px;
+                        }
+                        #verifyProgressButtons{
+                                width:100%;
+                                display:flex;
+                                flex-wrap:wrap;
+                                gap:0.5rem;
+                                justify-content:center;
+                                align-items:center;
+                                max-height:0;
+                                opacity:0;
+                                overflow:hidden;
+                                transition:max-height 0.3s ease, opacity 0.3s ease;
+                        }
+                        #verifyProgressContainer.expanded #verifyProgressButtons{
+                                max-height:200px;
+                                opacity:1;
+                        }
+                        #verifyProgressContainer.expanded #verifyCapturePreview{
+                                flex-wrap:wrap;
+                                overflow-y:auto;
+                        }
+                        .ctrl-btn{
+                                padding:14px 18px;
+                                font-size:1.1rem;
+                                border:none;
+                                border-radius:6px;
+                                background:#4CAF50;
+                                color:#fff;
+                        }
+                        .ctrl-btn-warning{ background:#FFC107; }
+                        .ctrl-btn-danger{ background:#F44336; }
+                        .ctrl-btn-success{ background:#4CAF50; }
+                        .ctrl-btn:active{
+                                transform:scale(0.97);
+                        }
+
+                        #verifyProgressBar{
+                                width:100%;
+                                background:#eee;
+                                height:10px;
+                                border-radius:4px;
+                                overflow:hidden;
+                                margin:4px 0;
+                                flex:1 0 100%;
+                        }
+
+                        #verifyProgressFill{
+                                width:0;
+                                height:100%;
+                                background:#4CAF50;
+                                transition:width 0.3s ease;
+                        }
+
+                        #verifyTimerText{
+                                margin-left:0.5rem;
+                                font-weight:bold;
+                        }
+
+                        @media(max-width:768px){
+                                .ctrl-btn{
+                                        flex:1 0 100%;
+                                        margin-top:0.5rem;
+                                }
+                        }
+                </style>
 		
 		<!-- Load face-api core library first -->
 		<script src="./js/face-api.min.js"></script>
@@ -104,8 +188,23 @@
 		<div style="display:none;">
 			<h1>Face Detection</h1>
 			<a href="#" onclick="urlReplace('index.html')">Go to Index</a><br>
-		</div>
-			<input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
+                </div>
+                        <input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
+
+                <div id="verifyProgressContainer" class="controls">
+                        <span id="verifyProgressText">0/0 verified</span>
+                        <span id="verifyTimerText"></span>
+                        <div id="verifyProgressBar"><div id="verifyProgressFill"></div></div>
+                        <div id="verifyProgressButtons">
+                                <div style="display:none;">
+                                        <button id="verifyRetakeBtn" class="ctrl-btn">Retake Last</button>
+                                </div>
+                                <button id="verifyRestartBtn" class="ctrl-btn ctrl-btn-warning">Restart</button>
+                                <button id="verifyCancelBtn" class="ctrl-btn ctrl-btn-danger">Cancel</button>
+                                <button id="verifyDownloadBtn" class="ctrl-btn ctrl-btn-success" style="display:none;">Download</button>
+                        </div>
+                <div id="verifyCapturePreview"></div>
+                </div>
 		
 		<div class="face-detection-container">
 			<div class="video-wrapper">

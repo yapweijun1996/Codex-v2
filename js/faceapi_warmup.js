@@ -192,6 +192,18 @@ function updateProgress() {
     if (restart) restart.style.display = 'inline-block';
 }
 
+function updateVerifyProgress() {
+    const el = document.getElementById('verifyProgressText');
+    if (el) {
+        el.innerText = `${verifiedCount}/${totalVerifyFaces} verified`;
+    }
+    const fill = document.getElementById('verifyProgressFill');
+    if (fill) {
+        const pct = totalVerifyFaces ? Math.min(100, (verifiedCount / totalVerifyFaces) * 100) : 0;
+        fill.style.width = pct + '%';
+    }
+}
+
 function addCapturePreview(dataUrl) {
     if (!dataUrl) return;
     const preview = document.getElementById('capturePreview');
@@ -264,6 +276,24 @@ function cancelRegistration() {
     clear_all_canvases();
     const container = document.querySelector('.face-detection-container');
     if (container) container.style.display = 'none';
+}
+
+function restartVerification() {
+    verifiedCount = 0;
+    verifiedIndices = new Set();
+    verificationCompleted = false;
+    updateVerifyProgress();
+    faceapi_action = 'verify';
+    camera_start();
+}
+
+function cancelVerification() {
+    camera_stop();
+    faceapi_action = null;
+    verificationCompleted = true;
+    verifiedCount = 0;
+    verifiedIndices = new Set();
+    updateVerifyProgress();
 }
 
 function downloadRegistrationData() {
@@ -466,6 +496,12 @@ async function load_face_descriptor_json(warmupFaceDescriptorJson, merge = false
             flatRegisteredDescriptors = descriptors;
             flatRegisteredUserMeta = descriptors.map(() => ({ id: null, name: null }));
         }
+
+        totalVerifyFaces = flatRegisteredDescriptors.length;
+        verifiedCount = 0;
+        verifiedIndices = new Set();
+        updateVerifyProgress();
+
         camera_start();
         video_face_detection();
     } catch (error) {
@@ -718,6 +754,9 @@ var registeredDescriptors = [];
 var maxCaptures = 20;
 var registrationCompleted = false;
 var verificationCompleted = false;
+var totalVerifyFaces = 0;
+var verifiedCount = 0;
+var verifiedIndices = new Set();
 var registrationStartTime = null;
 var registrationTimeout = 1 * 60 * 1000; // 1 minute
 var registrationTimer = null;
@@ -889,11 +928,19 @@ function faceapi_verify(descriptor){
         
         if (matchFound) {
             const userMeta = flatRegisteredUserMeta[matchedIndex] || { name: 'Unknown', id: 'Unknown' };
+            if (!verifiedIndices.has(matchedIndex)) {
+                verifiedIndices.add(matchedIndex);
+                verifiedCount++;
+                updateVerifyProgress();
+                if (verifiedCount >= totalVerifyFaces) {
+                    camera_stop();
+                    verificationCompleted = true;
+                    faceapi_action = null;
+                    alert('Verification complete');
+                }
+            }
             if (multiple_face_detection_yn !== "y") {
-                camera_stop();
-                verificationCompleted = true;
-                faceapi_action = null;
-                alert(`Face Verified: ${userMeta.name} (${userMeta.id}), distance: ${distance.toFixed(3)}`);
+                console.log(`Face Verified: ${userMeta.name} (${userMeta.id}), distance: ${distance.toFixed(3)}`);
             } else {
                 console.log(`Face Detected: ${userMeta.name} (${userMeta.id}), distance: ${distance.toFixed(3)}`);
             }
@@ -1191,6 +1238,7 @@ document.addEventListener("DOMContentLoaded", async function(event) {
         await startInMainThread();
     }
     updateProgress();
+    updateVerifyProgress();
     const retake = document.getElementById('retakeBtn');
     const restart = document.getElementById('restartBtn');
     const cancel = document.getElementById('cancelBtn');
@@ -1199,6 +1247,10 @@ document.addEventListener("DOMContentLoaded", async function(event) {
     if (restart) restart.addEventListener('click', restartRegistration);
     if (cancel) cancel.addEventListener('click', cancelRegistration);
     if (download) download.addEventListener('click', downloadRegistrationData);
+    const verifyRestart = document.getElementById('verifyRestartBtn');
+    const verifyCancel = document.getElementById('verifyCancelBtn');
+    if (verifyRestart) verifyRestart.addEventListener('click', restartVerification);
+    if (verifyCancel) verifyCancel.addEventListener('click', cancelVerification);
     // ----- Preview thumbnail interaction -----
     // Each captured frame is rendered as a small thumbnail inside the progress
     // container.  When the user taps on a thumbnail we want to show a larger
