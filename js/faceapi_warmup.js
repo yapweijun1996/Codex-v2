@@ -1268,6 +1268,28 @@ document.addEventListener("DOMContentLoaded", async function(event) {
     const verifyCancel = document.getElementById('verifyCancelBtn');
     if (verifyRestart) verifyRestart.addEventListener('click', restartVerification);
     if (verifyCancel) verifyCancel.addEventListener('click', cancelVerification);
+
+    const verifyContainer = document.getElementById('verifyProgressContainer');
+    if (verifyContainer) {
+        const videoEl = document.getElementById('video');
+        verifyContainer.addEventListener('click', e => {
+            if (e.target.classList.contains('capture-thumb')) return;
+            verifyContainer.classList.toggle('expanded');
+            if (verifyContainer.classList.contains('expanded')) {
+                if (videoEl) videoEl.pause();
+            } else {
+                if (videoEl) videoEl.play();
+            }
+            e.stopPropagation();
+        });
+        document.addEventListener('click', e => {
+            if (!verifyContainer.contains(e.target)) {
+                const wasExpanded = verifyContainer.classList.contains('expanded');
+                verifyContainer.classList.remove('expanded');
+                if (wasExpanded && videoEl) videoEl.play();
+            }
+        });
+    }
     // ----- Preview thumbnail interaction -----
     // Each captured frame is rendered as a small thumbnail inside the progress
     // container.  When the user taps on a thumbnail we want to show a larger

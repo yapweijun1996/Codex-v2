@@ -129,6 +129,27 @@
                                 flex-wrap:wrap;
                                 overflow-y:auto;
                         }
+                        #verifyCapturePreview{
+                                display:flex;
+                                flex-wrap:nowrap;
+                                gap:4px;
+                                margin-bottom:10px;
+                                max-width:100%;
+                                overflow-x:auto;
+                        }
+                        #verifyProgressContainer textarea[id^="verifyCapturePreview_"]{
+                                display:none;
+                        }
+                        .capture-thumb{
+                                width:64px;
+                                height:64px;
+                                object-fit:cover;
+                                border:1px solid #ccc;
+                                border-radius:4px;
+                                opacity:0;
+                                transition:opacity 0.3s ease;
+                        }
+                        .capture-thumb.show{ opacity:1; }
                         .ctrl-btn{
                                 padding:14px 18px;
                                 font-size:1.1rem;
