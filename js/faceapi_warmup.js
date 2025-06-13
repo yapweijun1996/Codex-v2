@@ -295,6 +295,14 @@ function restartVerification() {
     verifiedCount = 0;
     verifiedUserIds = new Set();
     verificationCompleted = false;
+    const list = document.getElementById('verifyPersonList');
+    if (list) {
+        Array.from(list.querySelectorAll('li')).forEach(li => {
+            li.classList.remove('verified');
+            const status = li.querySelector('.status');
+            if (status) status.textContent = 'pending';
+        });
+    }
     updateVerifyProgress();
     faceapi_action = 'verify';
     camera_start();
@@ -306,6 +314,14 @@ function cancelVerification() {
     verificationCompleted = true;
     verifiedCount = 0;
     verifiedUserIds = new Set();
+    const list = document.getElementById('verifyPersonList');
+    if (list) {
+        Array.from(list.querySelectorAll('li')).forEach(li => {
+            li.classList.remove('verified');
+            const status = li.querySelector('.status');
+            if (status) status.textContent = 'pending';
+        });
+    }
     updateVerifyProgress();
 }
 
@@ -512,6 +528,18 @@ async function load_face_descriptor_json(warmupFaceDescriptorJson, merge = false
             registeredDescriptors = descriptors;
             flatRegisteredDescriptors = descriptors;
             flatRegisteredUserMeta = descriptors.map(() => ({ id: null, name: null }));
+        }
+
+        const listEl = document.getElementById('verifyPersonList');
+        if (listEl) {
+            listEl.innerHTML = '';
+            registeredUsers.forEach(u => {
+                const li = document.createElement('li');
+                li.dataset.userId = u.id;
+                const name = u.name || 'Unknown';
+                li.innerHTML = `${name} (${u.id}) – <span class="status">pending</span>`;
+                listEl.appendChild(li);
+            });
         }
 
         totalVerifyFaces = registeredUsers.length;
@@ -949,6 +977,12 @@ function faceapi_verify(descriptor){
             if (uid && !verifiedUserIds.has(uid)) {
                 verifiedUserIds.add(uid);
                 verifiedCount++;
+                const li = document.querySelector(`#verifyPersonList li[data-user-id="${uid}"]`);
+                if (li) {
+                    const status = li.querySelector('.status');
+                    if (status) status.textContent = 'verified';
+                    li.classList.add('verified');
+                }
                 updateVerifyProgress();
                 showVerifyToast(`${userMeta.name} (${userMeta.id}) detected`);
                 if (verifiedCount >= totalVerifyFaces) {
