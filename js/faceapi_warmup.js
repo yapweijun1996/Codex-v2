@@ -603,16 +603,27 @@ function video_face_detection() {
 	video.addEventListener('play', () => {
 		canvas.width = video.videoWidth;
 		canvas.height = video.videoHeight;
-		function step() {
-			// Skip processing if video is paused/ended or a detection is already running
-			if (video.paused || video.ended) {
-				return;
-			}
-			if (isDetectingFrame) {
-				// Wait until the previous detection result returns
-				requestAnimationFrame(step);
-				return;
-			}
+                function step() {
+                        // Skip processing if video is paused/ended or a detection is already running
+                        if (video.paused || video.ended) {
+                                return;
+                        }
+                        if (isDetectingFrame) {
+                                // Wait until the previous detection result returns
+                                requestAnimationFrame(step);
+                                return;
+                        }
+
+                        // Ensure canvas has valid dimensions before drawing
+                        if (canvas.width === 0 || canvas.height === 0) {
+                                canvas.width = video.videoWidth || video.width;
+                                canvas.height = video.videoHeight || video.height;
+                                // If still zero, wait for the next frame
+                                if (canvas.width === 0 || canvas.height === 0) {
+                                        requestAnimationFrame(step);
+                                        return;
+                                }
+                        }
 
 			// Capture current frame
 			context.drawImage(video, 0, 0, canvas.width, canvas.height);
