@@ -62,6 +62,7 @@ var currentUserDescriptors = [];
 var registeredUsers = [];
 var flatRegisteredDescriptors = [];
 var flatRegisteredUserMeta = [];
+var lastLoadedVerificationJson = '';
 // Flag to allow multiple face detection ("y" = allow multiple, else single)
 var multiple_face_detection_yn = "y";
 
@@ -490,8 +491,15 @@ async function handleJsonFileInput(event) {
         showMessage('error', 'Failed to load: ' + errorFiles.join(', ') + '. Check the file format and try again.');
     }
     if (allUsers.length > 0) {
-        await load_face_descriptor_json(JSON.stringify(allUsers), true);
-        showMessage('success', `Loaded ${allUsers.length} users from ${files.length} file(s).`);
+        const jsonStr = JSON.stringify(allUsers);
+        const ta = document.querySelector('.all_face_id_for_verification');
+        if (ta) {
+            ta.value = jsonStr;
+            ta.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+            await load_face_descriptor_json(jsonStr, true);
+            showMessage('success', `Loaded ${allUsers.length} users from ${files.length} file(s).`);
+        }
     }
 }
 
@@ -1325,6 +1333,25 @@ document.addEventListener("DOMContentLoaded", async function(event) {
                 if (wasExpanded && videoEl) videoEl.play();
             }
         });
+    }
+
+    const verifyTa = document.querySelector('.all_face_id_for_verification');
+    if (verifyTa) {
+        const tryStartVerification = () => {
+            const txt = verifyTa.value.trim();
+            if (!txt) return;
+            try {
+                if (txt !== lastLoadedVerificationJson) {
+                    JSON.parse(txt);
+                    lastLoadedVerificationJson = txt;
+                    load_face_descriptor_json(txt);
+                }
+            } catch (err) {
+                console.error('Invalid verification JSON', err);
+            }
+        };
+        verifyTa.addEventListener('input', tryStartVerification);
+        tryStartVerification();
     }
     // ----- Preview thumbnail interaction -----
     // Each captured frame is rendered as a small thumbnail inside the progress
