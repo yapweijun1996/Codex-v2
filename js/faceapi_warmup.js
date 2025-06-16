@@ -460,8 +460,7 @@ async function camera_start() {
         try {
                 var stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
-                // Start playback explicitly in case autoplay is blocked
-                try { await video.play(); } catch (err) {}
+				
                 const overlay = document.getElementById('permissionOverlay');
                 if (overlay) overlay.style.display = 'none';
         } catch (error) {
