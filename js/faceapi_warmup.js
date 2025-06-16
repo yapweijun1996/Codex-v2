@@ -63,6 +63,7 @@ var registeredUsers = [];
 var flatRegisteredDescriptors = [];
 var flatRegisteredUserMeta = [];
 var lastLoadedVerificationJson = '';
+var verificationResults = [];
 // Flag to allow multiple face detection ("y" = allow multiple, else single)
 var multiple_face_detection_yn = "y";
 
@@ -304,6 +305,8 @@ function restartVerification() {
             if (status) status.textContent = 'pending';
         });
     }
+    verificationResults = registeredUsers.map(u => ({ id: u.id, name: u.name, verified: false }));
+    updateVerificationResultTextarea();
     updateVerifyProgress();
     faceapi_action = 'verify';
     camera_start();
@@ -323,6 +326,8 @@ function cancelVerification() {
             if (status) status.textContent = 'pending';
         });
     }
+    verificationResults = registeredUsers.map(u => ({ id: u.id, name: u.name, verified: false }));
+    updateVerificationResultTextarea();
     updateVerifyProgress();
     clear_all_canvases();
 }
@@ -357,6 +362,14 @@ function downloadRegistrationData() {
     link.download = 'faceid_with_users.json';
     link.click();
     URL.revokeObjectURL(url);
+}
+
+function updateVerificationResultTextarea() {
+    const ta = document.querySelector('.face_verification_result');
+    if (ta) {
+        ta.value = JSON.stringify(verificationResults, null, 2);
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
 }
 
 function isConsistentWithCurrentUser(descriptor) {
@@ -561,6 +574,9 @@ async function load_face_descriptor_json(warmupFaceDescriptorJson, merge = false
                 listEl.appendChild(li);
             });
         }
+
+        verificationResults = registeredUsers.map(u => ({ id: u.id, name: u.name, verified: false }));
+        updateVerificationResultTextarea();
 
         totalVerifyFaces = registeredUsers.length;
         verifiedCount = 0;
@@ -1004,6 +1020,8 @@ function faceapi_verify(descriptor){
                     if (status) status.textContent = 'verified';
                     li.classList.add('verified');
                 }
+                verificationResults = verificationResults.map(r => r.id === uid ? { ...r, verified: true } : r);
+                updateVerificationResultTextarea();
                 updateVerifyProgress();
                 showVerifyToast(`${userMeta.name} (${userMeta.id}) detected`);
                 if (verifiedCount >= totalVerifyFaces) {
