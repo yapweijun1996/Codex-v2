@@ -286,8 +286,9 @@
 				<button onclick="hideVerifyCompleteOverlay()">OK</button>
 			</div>
 		</div>
-		<div id="verifyToast"></div>
-		<input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
+                <div id="verifyToast"></div>
+                <input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
+                <textarea class="all_face_id_for_verification" style="display:none;"></textarea>
 		
 		<div id="verifyProgressContainer" class="controls">
 			<span id="verifyProgressText">0/0 verified.</span>
