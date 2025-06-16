@@ -339,6 +339,11 @@ function downloadRegistrationData() {
         ]
     }];
     const jsonData = JSON.stringify(downloadData, null, 2);
+    const ta = document.querySelector('.user_face_id_json');
+    if (ta) {
+        ta.value = jsonData;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
     const blob = new Blob([jsonData], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
