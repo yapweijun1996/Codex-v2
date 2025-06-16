@@ -272,7 +272,11 @@ function restartRegistration() {
     clear_all_canvases();
     const container = document.querySelector('.face-detection-container');
     if (container) container.style.display = 'flex';
-    camera_start();
+    camera_start().then(() => {
+        if (!videoDetectionStep) {
+            video_face_detection();
+        }
+    });
 }
 
 function cancelRegistration() {
@@ -309,7 +313,11 @@ function restartVerification() {
     updateVerificationResultTextarea();
     updateVerifyProgress();
     faceapi_action = 'verify';
-    camera_start();
+    camera_start().then(() => {
+        if (!videoDetectionStep) {
+            video_face_detection();
+        }
+    });
 }
 
 function cancelVerification() {
@@ -452,6 +460,8 @@ async function camera_start() {
         try {
                 var stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
+                // Start playback explicitly in case autoplay is blocked
+                try { await video.play(); } catch (err) {}
                 const overlay = document.getElementById('permissionOverlay');
                 if (overlay) overlay.style.display = 'none';
         } catch (error) {
