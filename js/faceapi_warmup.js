@@ -616,8 +616,8 @@ function video_face_detection() {
 
                         // Ensure canvas has valid dimensions before drawing
                         if (canvas.width === 0 || canvas.height === 0) {
-                                canvas.width = 450;
-                                canvas.height = 450;
+                                canvas.width = video.videoWidth || video.width;
+                                canvas.height = video.videoHeight || video.height;
                                 // If still zero, wait for the next frame
                                 if (canvas.width === 0 || canvas.height === 0) {
                                         requestAnimationFrame(step);
