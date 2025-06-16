@@ -315,20 +315,9 @@ function restartVerification() {
 function cancelVerification() {
     camera_stop();
     faceapi_action = null;
-    verificationCompleted = true;
-    verifiedCount = 0;
-    verifiedUserIds = new Set();
-    const list = document.getElementById('verifyPersonList');
-    if (list) {
-        Array.from(list.querySelectorAll('li')).forEach(li => {
-            li.classList.remove('verified');
-            const status = li.querySelector('.status');
-            if (status) status.textContent = 'pending';
-        });
-    }
-    verificationResults = registeredUsers.map(u => ({ id: u.id, name: u.name, verified: false }));
-    updateVerificationResultTextarea();
-    updateVerifyProgress();
+    // Preserve current verification progress and results.
+    // Only clear the canvas overlays and stop the camera so the
+    // user can restart verification later if desired.
     clear_all_canvases();
 }
 
