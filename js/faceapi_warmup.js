@@ -614,6 +614,17 @@ function video_face_detection() {
                                 return;
                         }
 
+                        // Ensure canvas has valid dimensions before drawing
+                        if (canvas.width === 0 || canvas.height === 0) {
+                                canvas.width = 450;
+                                canvas.height = 450;
+                                // If still zero, wait for the next frame
+                                if (canvas.width === 0 || canvas.height === 0) {
+                                        requestAnimationFrame(step);
+                                        return;
+                                }
+                        }
+
 			// Capture current frame
 			context.drawImage(video, 0, 0, canvas.width, canvas.height);
 			const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
