@@ -327,8 +327,8 @@ function cancelVerification() {
     clear_all_canvases();
 }
 
-function downloadRegistrationData() {
-    if (currentUserDescriptors.length === 0) return;
+function populateUserFaceIdTextarea() {
+    if (currentUserDescriptors.length === 0) return null;
     const meanDescriptor = computeMeanDescriptor(currentUserDescriptors);
     const downloadData = [{
         id: currentUserId,
@@ -344,6 +344,12 @@ function downloadRegistrationData() {
         ta.value = jsonData;
         ta.dispatchEvent(new Event('input', { bubbles: true }));
     }
+    return jsonData;
+}
+
+function downloadRegistrationData() {
+    const jsonData = populateUserFaceIdTextarea();
+    if (!jsonData) return;
     const blob = new Blob([jsonData], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -951,6 +957,7 @@ function faceapi_register(descriptor) {
             clear_all_canvases();
             const container = document.getElementById('progressContainer');
             if (container) container.classList.add('expanded');
+            populateUserFaceIdTextarea();
             const downloadBtn = document.getElementById('downloadBtn');
             if (downloadBtn) downloadBtn.style.display = 'inline-block';
             updateProgress();
