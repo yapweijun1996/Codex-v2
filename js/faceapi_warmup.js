@@ -1308,6 +1308,91 @@ function faceapi_warmup() {
 	}
 }
 
+// Main-thread detection loop (for fallback mode)
+async function video_face_detection_mainthread() {
+    const video = document.getElementById(videoId);
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext("2d");
+    canvas.willReadFrequently = true;
+
+    async function step() {
+        if (video.paused || video.ended) {
+            requestAnimationFrame(step);
+            return;
+        }
+
+        // Draw frame to canvas
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Detect faces directly
+        let detections;
+        if (multiple_face_detection_yn === "y") {
+            detections = await faceapi
+                .detectAllFaces(canvas, new faceapi.TinyFaceDetectorOptions(face_detector_options_setup))
+                .withFaceLandmarks()
+                .withFaceDescriptors();
+        } else {
+            const result = await faceapi
+                .detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions(face_detector_options_setup))
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+            detections = result ? [result] : [];
+        }
+
+        drawAllFaces(detections);
+
+        // ----- Registration/verification logic -----
+        if (faceapi_action === "verify") {
+            detections.forEach(d => faceapi_verify(d.descriptor));
+        } else if (faceapi_action === "register") {
+            // --- Registration timer logic (matches worker logic) ---
+            if (registrationStartTime === null) {
+                registrationStartTime = Date.now();
+                startRegistrationTimer();
+            }
+            if (Date.now() - registrationStartTime > registrationTimeout) {
+                stopRegistrationTimer();
+                showMessage('error', 'Registration timed out. Ensure you are well lit and try again.');
+                if (typeof showTimeoutOverlay === 'function') showTimeoutOverlay();
+                faceapi_action = null;
+                camera_stop();
+                registrationCompleted = true;
+                stopRegistrationTimer();
+            } else if (detections.length !== 1) {
+                showMessage('error', 'Multiple faces detected. Please ensure only your face is visible.');
+            } else {
+                const descriptor = detections[0].descriptor;
+                if (!isCaptureQualityHigh(detections[0])) {
+                    showMessage('error', 'Low-quality capture. Ensure good lighting and face the camera.');
+                } else if (isDuplicateAcrossUsers(descriptor)) {
+                    showMessage('error', 'This face appears already registered. Restart if this is incorrect.');
+                } else if (!isConsistentWithCurrentUser(descriptor)) {
+                    showMessage('error', 'Face recognized, but the angle changed too much. Please turn your head slowly left or right.');
+                } else {
+                    // --- Set lastFaceImageData for thumbnail preview, just like worker mode ---
+                    lastFaceImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                    showMessage('success', 'Face capture accepted.');
+                    if (navigator.vibrate) navigator.vibrate(100);
+                    faceapi_register(descriptor);
+                }
+            }
+        }
+
+        // --- Draw registration overlay for current detected face (like worker) ---
+        if (faceapi_action === "register" && detections.length === 1 && detections[0]) {
+            drawRegistrationOverlay(detections[0]);
+        }
+
+        requestAnimationFrame(step);
+    }
+
+    // Kick off the loop
+    requestAnimationFrame(step);
+}
+
 // Main-thread fallback for environments without SW/OffscreenCanvas (e.g. iOS PWA)
 async function startInMainThread() {
     console.log("Main-thread fallback: loading face-api models directly");
@@ -1317,6 +1402,8 @@ async function startInMainThread() {
     if (Array.isArray(warmup_completed)) {
         warmup_completed.forEach(func => func());
     }
+	
+	await video_face_detection_mainthread();
 }
 
 // Initialize either service worker or fallback on main thread
