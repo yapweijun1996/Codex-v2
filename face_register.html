@@ -538,14 +538,15 @@
 				}
 			});
 			
-			function checkOrientation(){
-				const overlay = document.getElementById('orientationOverlay');
-				if(window.innerHeight >= window.innerWidth){
-					overlay.style.display = 'none';
-				}else{
-					overlay.style.display = 'flex';
-				}
-			}
+                        function checkOrientation(){
+                                const overlay = document.getElementById('orientationOverlay');
+                                const isMobile = window.matchMedia('(max-width: 768px)').matches;
+                                if(isMobile && window.innerWidth > window.innerHeight){
+                                        overlay.style.display = 'flex';
+                                }else{
+                                        overlay.style.display = 'none';
+                                }
+                        }
 			
 			window.addEventListener('orientationchange', checkOrientation);
 			window.addEventListener('resize', checkOrientation);
