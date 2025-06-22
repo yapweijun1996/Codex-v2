@@ -2,7 +2,7 @@
 
 - [x] Display a full screen loading overlay while face-api models warm up.
 - [x] Hide the loader once warm up completes using the `warmup_completed` callback.
-- [x] Keep the orientation overlay to prompt portrait mode on mobile.
+- [x] Orientation overlay only displays on mobile devices when held landscape.
 - [x] Provide touch-friendly controls with large buttons.
 
 ## Next Steps
