@@ -450,32 +450,45 @@ function drawRegistrationOverlay(detection) {
 }
 
 async function camera_start() {
-  var video = document.getElementById(videoId);
+  const video = document.getElementById(videoId);
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     console.error('getUserMedia not supported');
     if (typeof showPermissionOverlay === 'function') showPermissionOverlay();
     showMessage('error', 'Camera not supported in this browser.');
     return;
   }
+
+  // Add playsinline etc. attributes programmatically
+  video.setAttribute('playsinline', '');
+  video.setAttribute('muted', '');
+  video.setAttribute('autoplay', '');
+  video.style.display = 'block';
+
   try {
-    var stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
 
-    // Wait for metadata to load, then play video (fixes blank video in many PWAs)
+    // Try to play video after metadata loads
     video.onloadedmetadata = () => {
       video.play().catch(e => {
         console.warn('video.play() failed:', e);
       });
     };
 
+    // Add error handlers to video
+    video.onerror = e => console.error('Video error event:', e);
+    video.onpause = () => console.log('Video paused');
+    video.onplay = () => console.log('Video playing');
+
     const overlay = document.getElementById('permissionOverlay');
     if (overlay) overlay.style.display = 'none';
-  } catch (error) {
-    console.error('Error accessing webcam:', error);
+  } catch (err) {
+    console.error('Error accessing webcam:', err);
     if (typeof showPermissionOverlay === 'function') showPermissionOverlay();
-    showMessage('error', 'Unable to access camera: ' + error.message);
+    showMessage('error', 'Unable to access camera: ' + err.message);
   }
 }
+
 
 async function camera_stop() {
 	var video = document.getElementById(videoId);
