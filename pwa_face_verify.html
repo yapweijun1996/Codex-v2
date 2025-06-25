@@ -478,25 +478,35 @@
 <html>
 <head><title>Camera Test</title></head>
 <body>
-  <video id="video" autoplay muted playsinline style="width:100%; max-width:400px;"></video>
-  <script>
-  
-  // Detect iOS and if it is, add the crossorigin to the video player so that it is working as expected
-  if (navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Mac') != -1 && navigator.userAgent.indexOf('Chrome') == -1){
-    document.getElementById("video").setAttribute("crossorigin", "true");
-};
+<button id="get-access">Get access to camera</button>
+<video autoplay></video>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 
+<script>
+document.querySelector('#get-access').addEventListener('click', async function init(e) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const videoTracks = stream.getVideoTracks();
+    const track = videoTracks[0];
+    console.log(`Getting video from: ${track.label}`);
+    document.querySelector('video').srcObject = stream;
+    document.querySelector('#get-access').setAttribute('hidden', true);
+  } catch (error) {
+    console.error('Error accessing the camera:', error);
+  }
+});
 
-    const video = document.getElementById('video');
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-        video.onloadedmetadata = () => video.play();
-      })
-      .catch(e => console.error('Camera error:', e));
-	  
-
-  </script>
+function grabFrame() {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  const video = document.querySelector('video');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const image = canvas.toDataURL('image/png');
+  console.log('Captured image:', image);
+}
+</script>
 </body>
 </html>
 
