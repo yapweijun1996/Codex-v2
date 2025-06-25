@@ -480,6 +480,13 @@
 <body>
   <video id="video" autoplay muted playsinline style="width:100%; max-width:400px;"></video>
   <script>
+  
+  // Detect iOS and if it is, add the crossorigin to the video player so that it is working as expected
+  if (navigator.userAgent.indexOf('Safari') != -1 && navigator.userAgent.indexOf('Mac') != -1 && navigator.userAgent.indexOf('Chrome') == -1){
+    document.getElementById("video").setAttribute("crossorigin", "true");
+};
+
+
     const video = document.getElementById('video');
     navigator.mediaDevices.getUserMedia({ video: true })
       .then(stream => {
@@ -488,13 +495,7 @@
       })
       .catch(e => console.error('Camera error:', e));
 	  
-	  
-	  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-const isInStandaloneMode = ('standalone' in window.navigator) && window.navigator.standalone;
 
-if (isIos && isInStandaloneMode) {
-  alert("Camera does not work inside iOS PWA. Please open this page in Safari browser instead.");
-}
   </script>
 </body>
 </html>
