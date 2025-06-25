@@ -1083,9 +1083,9 @@ async function initWorkerAddEventListener() {
 			break;
 			case 'DETECTION_RESULT':
 			console.log("DETECTION_RESULT here");
-			console.log(event);
-			console.log(event.data.data.detections[0]);
-			console.log("event.data.data.detections");
+			//console.log(event);
+			//console.log(event.data.data.detections[0]);
+			//console.log("event.data.data.detections");
 			console.log(event.data.data.detections);
 			
 			
@@ -1180,8 +1180,8 @@ async function initWorkerAddEventListener() {
 			break;
 			case 'WARMUP_RESULT':
 			console.log('WARMUP_RESULT.');
-			console.log(event);
-			console.log(event.data.data.detections);
+			//console.log(event);
+			//console.log(event.data.data.detections);
 			
 			if (typeof warmup_completed !== 'undefined') {
 				// Execute all functions in the array
