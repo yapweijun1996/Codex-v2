@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<meta charset="UTF-8"> 
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 		<title>Face Detection</title>
 		<link rel="manifest" href="manifest.json?asset_v=1">
 		<meta name="theme-color" content="#4CAF50">
@@ -17,16 +17,16 @@
 				box-sizing: border-box;
 			}
 			
-                        body {
-                                font-family: Arial, sans-serif;
-                                background-color: #f4f4f9;
-                                display: flex;
-                                align-items: center;
-                                touch-action: manipulation;
-                                height: 100vh;
-                                flex-direction: column;
-                                color: #333;
-                        }
+			body {
+				font-family: Arial, sans-serif;
+				background-color: #f4f4f9;
+				display: flex;
+				align-items: center;
+				touch-action: manipulation;
+				height: 100vh;
+				flex-direction: column;
+				color: #333;
+			}
 			
 			/* Centering and spacing */
 			h1 {
@@ -124,39 +124,39 @@
 				object-fit:contain;
 			}
 			
-                        /* Snapshot canvas follows video size */
-                        .snapshot{
-                                width:100%;
-                                height:auto;
-                                max-height:100vh;
-                                aspect-ratio:4/3;
-                        }
-
-                        /* Preview thumbnails container */
-                        #capturePreview{
-                                display:flex;
-                                flex-wrap:nowrap;
-                                gap:4px;
-                                margin-bottom:10px;
-                                max-width:100%;
-                                overflow-x:auto;
-                        }
-
-                        #progressContainer textarea[id^="capturePreview_"]{
-                                display:none;
-                        }
-
-                        .capture-thumb{
-                                width:64px;
-                                height:64px;
-                                object-fit:cover;
-                                border:1px solid #ccc;
-                                border-radius:4px;
-                                opacity:0;
-                                transition:opacity 0.3s ease;
-                        }
-
-                        .capture-thumb.show{ opacity:1; }
+			/* Snapshot canvas follows video size */
+			.snapshot{
+				width:100%;
+				height:auto;
+				max-height:100vh;
+				aspect-ratio:4/3;
+			}
+			
+			/* Preview thumbnails container */
+			#capturePreview{
+				display:flex;
+				flex-wrap:nowrap;
+				gap:4px;
+				margin-bottom:10px;
+				max-width:100%;
+				overflow-x:auto;
+			}
+			
+			#progressContainer textarea[id^="capturePreview_"]{
+				display:none;
+			}
+			
+			.capture-thumb{
+				width:64px;
+				height:64px;
+				object-fit:cover;
+				border:1px solid #ccc;
+				border-radius:4px;
+				opacity:0;
+				transition:opacity 0.3s ease;
+			}
+			
+			.capture-thumb.show{ opacity:1; }
 			
 			/* Adapt video & snapshot to portrait (mobile) 9:16 ratio */
 			@media (orientation: portrait){
@@ -232,51 +232,51 @@
 				transition: opacity 0.5s ease;
 			}
 			
-                        #instructionsOverlay{
-                                position:fixed;
-                                inset:0;
-                                background:rgba(0,0,0,0.85);
-                                color:white;
-                                display:none;
-                                justify-content:center;
-                                align-items:center;
-                                text-align:center;
-                                padding:1rem;
-                                z-index:10002;
-                                font-size:1.2rem;
-                        }
-                        #instructionsOverlay button{
-                                margin-top:1rem;
-                                padding:12px 16px;
-                                font-size:1rem;
-                                border:none;
-                                border-radius:6px;
-                                background:#4CAF50;
-                                color:#fff;
-                        }
-
-                        #timeoutOverlay{
-                                position:fixed;
-                                inset:0;
-                                background:rgba(0,0,0,0.85);
-                                color:white;
-                                display:none;
-                                justify-content:center;
-                                align-items:center;
-                                text-align:center;
-                                padding:1rem;
-                                z-index:10003;
-                                font-size:1.2rem;
-                        }
-                        #timeoutOverlay button{
-                                margin:0.5rem;
-                                padding:12px 16px;
-                                font-size:1rem;
-                                border:none;
-                                border-radius:6px;
-                                background:#4CAF50;
-                                color:#fff;
-                        }
+			#instructionsOverlay{
+				position:fixed;
+				inset:0;
+				background:rgba(0,0,0,0.85);
+				color:white;
+				display:none;
+				justify-content:center;
+				align-items:center;
+				text-align:center;
+				padding:1rem;
+				z-index:10002;
+				font-size:1.2rem;
+			}
+			#instructionsOverlay button{
+				margin-top:1rem;
+				padding:12px 16px;
+				font-size:1rem;
+				border:none;
+				border-radius:6px;
+				background:#4CAF50;
+				color:#fff;
+			}
+			
+			#timeoutOverlay{
+				position:fixed;
+				inset:0;
+				background:rgba(0,0,0,0.85);
+				color:white;
+				display:none;
+				justify-content:center;
+				align-items:center;
+				text-align:center;
+				padding:1rem;
+				z-index:10003;
+				font-size:1.2rem;
+			}
+			#timeoutOverlay button{
+				margin:0.5rem;
+				padding:12px 16px;
+				font-size:1rem;
+				border:none;
+				border-radius:6px;
+				background:#4CAF50;
+				color:#fff;
+			}
 			
 			/* Touch-friendly buttons */
 			.controls{
@@ -311,25 +311,25 @@
 				overflow:hidden;
 				transition:max-height 0.3s ease, opacity 0.3s ease;
 			}
-                        #progressContainer.expanded #progressButtons{
-                                max-height:200px;
-                                opacity:1;
-                        }
-                        #progressContainer.expanded #capturePreview{
-                                flex-wrap:wrap;
-                                overflow-y:auto;
-                        }
-                        .ctrl-btn{
-                                padding:14px 18px;
-                                font-size:1.1rem;
-                                border:none;
-                                border-radius:6px;
-                                background:#4CAF50;
-                                color:#fff;
-                        }
-                        .ctrl-btn-warning{ background:#FFC107; }
-                        .ctrl-btn-danger{ background:#F44336; }
-                        .ctrl-btn-success{ background:#4CAF50; }
+			#progressContainer.expanded #progressButtons{
+				max-height:200px;
+				opacity:1;
+			}
+			#progressContainer.expanded #capturePreview{
+				flex-wrap:wrap;
+				overflow-y:auto;
+			}
+			.ctrl-btn{
+				padding:14px 18px;
+				font-size:1.1rem;
+				border:none;
+				border-radius:6px;
+				background:#4CAF50;
+				color:#fff;
+			}
+			.ctrl-btn-warning{ background:#FFC107; }
+			.ctrl-btn-danger{ background:#F44336; }
+			.ctrl-btn-success{ background:#4CAF50; }
 			.ctrl-btn:active{
 				transform:scale(0.97);
 			}
@@ -344,17 +344,17 @@
 				flex:1 0 100%;
 			}
 			
-                        #progressFill{
-                                width:0;
-                                height:100%;
-                                background:#4CAF50;
-                                transition:width 0.3s ease;
-                        }
-
-                        #timerText{
-                                margin-left:0.5rem;
-                                font-weight:bold;
-                        }
+			#progressFill{
+				width:0;
+				height:100%;
+				background:#4CAF50;
+				transition:width 0.3s ease;
+			}
+			
+			#timerText{
+				margin-left:0.5rem;
+				font-weight:bold;
+			}
 			
 			@media(max-width:768px){
 				.ctrl-btn{
@@ -382,40 +382,40 @@
 				border-radius:4px;
 				display:inline-block;
 			}
-                        #registrationMessage{
-                                display:none;
-                        }
-                        .modal{
-                                position:fixed;
-                                inset:0;
-                                background:rgba(0,0,0,0.8);
-                                display:none;
-                                justify-content:center;
-                                align-items:center;
-                                z-index:10004;
-                        }
-                        .modal img{
-                                max-width:90%;
-                                max-height:90%;
-                        }
-                        .modal .prev,
-                        .modal .next{
-                                position:absolute;
-                                top:50%;
-                                transform:translateY(-50%);
-                                font-size:2rem;
-                                color:#fff;
-                                padding:0 10px;
-                                cursor:pointer;
-                                user-select:none;
-		
-								box-shadow: 0 0px 9px rgba(0, 0, 0, 0.45), 0 0px 20px rgba(0, 0, 0, 0.20);
-								background: rgba(0, 0, 0, 0.3);
-								border-radius: 50%;
-                        }
-                        .modal .prev{ left:10px; }
-                        .modal .next{ right:10px; }
-                </style>
+			#registrationMessage{
+				display:none;
+			}
+			.modal{
+				position:fixed;
+				inset:0;
+				background:rgba(0,0,0,0.8);
+				display:none;
+				justify-content:center;
+				align-items:center;
+				z-index:10004;
+			}
+			.modal img{
+				max-width:90%;
+				max-height:90%;
+			}
+			.modal .prev,
+			.modal .next{
+				position:absolute;
+				top:50%;
+				transform:translateY(-50%);
+				font-size:2rem;
+				color:#fff;
+				padding:0 10px;
+				cursor:pointer;
+				user-select:none;
+				
+				box-shadow: 0 0px 9px rgba(0, 0, 0, 0.45), 0 0px 20px rgba(0, 0, 0, 0.20);
+				background: rgba(0, 0, 0, 0.3);
+				border-radius: 50%;
+			}
+			.modal .prev{ left:10px; }
+			.modal .next{ right:10px; }
+		</style>
 		
 		<!-- Load face-api core library first -->
 		<script src="./js/face-api.min.js?asset_v=1"></script>
@@ -446,135 +446,86 @@
 					el.style.display = 'flex';
 				}
 			}
-                        function hideInstructions(){
-                                const el = document.getElementById('instructionsOverlay');
-                                if(el){
-                                        el.style.display = 'none';
-                                        localStorage.setItem('instructionsShown','1');
-                                }
-                        }
-
-                        function showTimeoutOverlay(){
-                                const el = document.getElementById('timeoutOverlay');
-                                if(el){
-                                        el.style.display = 'flex';
-                                        const container = document.getElementById('progressContainer');
-                                        if(container){
-                                                container.classList.add('expanded');
-                                        }
-                                }
-                        }
-
-                        function hideTimeoutOverlay(){
-                                const el = document.getElementById('timeoutOverlay');
-                                if(el){
-                                        el.style.display = 'none';
-                                }
-                        }
-                </script>
-        </head>
+			function hideInstructions(){
+				const el = document.getElementById('instructionsOverlay');
+				if(el){
+					el.style.display = 'none';
+					localStorage.setItem('instructionsShown','1');
+				}
+			}
+			
+			function showTimeoutOverlay(){
+				const el = document.getElementById('timeoutOverlay');
+				if(el){
+					el.style.display = 'flex';
+					const container = document.getElementById('progressContainer');
+					if(container){
+						container.classList.add('expanded');
+					}
+				}
+			}
+			
+			function hideTimeoutOverlay(){
+				const el = document.getElementById('timeoutOverlay');
+				if(el){
+					el.style.display = 'none';
+				}
+			}
+		</script>
+	</head>
 	<body>
 		<div id="loadingOverlay">Loading face detection models...</div>
 		<div id="orientationOverlay">Please rotate your device to portrait orientation for best results.</div>
 		<div id="permissionOverlay">Camera access is required. Please grant permission or open this page in a supported browser.</div>
-                <div id="instructionsOverlay">
-                        <div>
-                                <p>Step 1: Position your face within the frame.</p>
-                                <p>Step 2: Slowly turn your head left and right.</p>
-                                <p>Step 3: Tap capture when ready.</p>
-                                <button onclick="hideInstructions()">Got it</button>
-                        </div>
-                </div>
-                <div id="timeoutOverlay">
-                        <div>
-                                <p>Registration timed out.</p>
-                                <p>Please ensure good lighting and try again.</p>
-                                <button onclick="hideTimeoutOverlay(); restartRegistration()">Retry</button>
-                                <button onclick="hideTimeoutOverlay(); cancelRegistration()">Cancel</button>
-                        </div>
-                </div>
-                <div style="display:none;">
+		<div id="instructionsOverlay">
+			<div>
+				<p>Step 1: Position your face within the frame.</p>
+				<p>Step 2: Slowly turn your head left and right.</p>
+				<p>Step 3: Tap capture when ready.</p>
+				<button onclick="hideInstructions()">Got it</button>
+			</div>
+		</div>
+		<div id="timeoutOverlay">
+			<div>
+				<p>Registration timed out.</p>
+				<p>Please ensure good lighting and try again.</p>
+				<button onclick="hideTimeoutOverlay(); restartRegistration()">Retry</button>
+				<button onclick="hideTimeoutOverlay(); cancelRegistration()">Cancel</button>
+			</div>
+		</div>
+		<div style="display:none;">
 			<h1>Face Detection</h1>
 			<a href="#" onclick="urlReplace('index.html')">Go to Index</a><br>
-                        <input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
-                        <textarea class="user_face_id_json" style="display:none;"></textarea>
-                        <!-- Add user ID and name inputs -->
+			<input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
+			<textarea class="user_face_id_json" style="display:none;"></textarea>
+			<!-- Add user ID and name inputs -->
 			<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
 			<label>User Name: <input type="text" id="userNameInput" placeholder="Enter user name"></label><br>
 		</div>
 		<div id="progressContainer" class="controls">
-                        <span id="progressText">0/20 captures</span>
-                        <span id="timerText"></span>
-                        <div id="progressBar"><div id="progressFill"></div></div>
+			<span id="progressText">0/20 captures</span>
+			<span id="timerText"></span>
+			<div id="progressBar"><div id="progressFill"></div></div>
 			<div id="progressButtons">
 				<div style="display:none;">
 					<button id="retakeBtn" class="ctrl-btn">Retake Last</button>
 				</div>
-                                <button id="restartBtn" class="ctrl-btn ctrl-btn-warning">Restart</button>
-                                <button id="cancelBtn" class="ctrl-btn ctrl-btn-danger">Cancel</button>
-                                <button id="downloadBtn" class="ctrl-btn ctrl-btn-success" style="display:none;">Download</button>
+				<button id="restartBtn" class="ctrl-btn ctrl-btn-warning">Restart</button>
+				<button id="cancelBtn" class="ctrl-btn ctrl-btn-danger">Cancel</button>
+				<button id="downloadBtn" class="ctrl-btn ctrl-btn-success" style="display:none;">Download</button>
 			</div>
-                <div id="capturePreview"></div>
-				<!-- Console Log/Error/Warning Viewer Snippet -->
-								<div id="consoleOutput" style="background:##111;color:##33ff33;padding:12px;height:180px;overflow-y:auto;font-size:14px;border-radius:8px;margin:12px;box-shadow:0 2px 8px ##0004;white-space:pre-wrap;">
-								</div>
-								<script>
-									(function() {
-										const outputDiv = document.getElementById('consoleOutput');
-										const colors = {
-											log: '##33ff33',
-											error: '##ff4444',
-											warn: '##ffaa33'
-										};
-										// Helper to print any message
-										function printMsg(args, type='log') {
-											args.forEach(arg => {
-												const span = document.createElement('span');
-												span.style.color = colors[type] || colors.log;
-												span.textContent =
-												(typeof arg === "object" ? JSON.stringify(arg) : String(arg)) + "\n";
-												outputDiv.appendChild(span);
-											});
-											// Auto scroll to bottom
-											outputDiv.scrollTop = outputDiv.scrollHeight;
-										}
-										// Patch console.log
-										const oldLog = console.log;
-										console.log = function(...args) {
-											printMsg(args, 'log');
-											oldLog.apply(console, args);
-										};
-										// Patch console.error
-										const oldError = console.error;
-										console.error = function(...args) {
-											printMsg(args, 'error');
-											oldError.apply(console, args);
-										};
-										// Patch console.warn
-										const oldWarn = console.warn;
-										console.warn = function(...args) {
-											printMsg(args, 'warn');
-											oldWarn.apply(console, args);
-										};
-										
-										// Example logs
-										console.log("Console log snippet ready!");
-										console.warn("This is a warning");
-										console.error("This is an error!");
-										setTimeout(() => console.log("This log is delayed by 2 seconds."), 2000);
-									})();
-								</script>
-                </div>
-                <div id="imageModal" class="modal">
-                        <span class="close">&times;</span>
-                        <span class="prev">&#10094;</span>
-                        <img>
-                        <span class="next">&#10095;</span>
-                </div>
-                <script>
-                        function getParam(name) {
-                                const params = new URLSearchParams(window.location.search);
-                                return params.get(name);
+			<div id="capturePreview"></div>
+		</div>
+		<div id="imageModal" class="modal">
+			<span class="close">&times;</span>
+			<span class="prev">&#10094;</span>
+			<img>
+			<span class="next">&#10095;</span>
+		</div>
+		<script>
+			function getParam(name) {
+				const params = new URLSearchParams(window.location.search);
+				return params.get(name);
 			}
 			document.addEventListener('DOMContentLoaded', async () => {
 				const defId = getParam('userid') || 'test001';
@@ -587,48 +538,48 @@
 				}
 			});
 			
-                        function checkOrientation(){
-                                const overlay = document.getElementById('orientationOverlay');
-                                const isMobile = window.matchMedia('(max-width: 768px)').matches;
-                                if(isMobile && window.innerWidth > window.innerHeight){
-                                        overlay.style.display = 'flex';
-                                }else{
-                                        overlay.style.display = 'none';
-                                }
-                        }
+			function checkOrientation(){
+				const overlay = document.getElementById('orientationOverlay');
+				const isMobile = window.matchMedia('(max-width: 768px)').matches;
+				if(isMobile && window.innerWidth > window.innerHeight){
+					overlay.style.display = 'flex';
+				}else{
+					overlay.style.display = 'none';
+				}
+			}
 			
 			window.addEventListener('orientationchange', checkOrientation);
 			window.addEventListener('resize', checkOrientation);
 			
-                                document.addEventListener('DOMContentLoaded', () => {
-                                        const container = document.getElementById('progressContainer');
-                                        const video = document.getElementById('video');
-                                        const modal = document.getElementById('imageModal');
-                                        container.addEventListener('click', (e) => {
-                                                if(e.target.classList.contains('capture-thumb')) return;
-                                                container.classList.toggle('expanded');
-                                                if(container.classList.contains('expanded')){
-                                                        video.pause();
-                                                        if(typeof pauseRegistrationTimer === 'function') pauseRegistrationTimer();
-                                                } else {
-                                                        video.play();
-                                                        if(typeof resumeRegistrationTimer === 'function') resumeRegistrationTimer();
-                                                }
-                                                e.stopPropagation();
-                                        });
-                                        document.addEventListener('click', (e) => {
-                                                if(modal && modal.style.display === 'flex') return;
-                                                if(!container.contains(e.target)){
-                                                        const wasExpanded = container.classList.contains('expanded');
-                                                        container.classList.remove('expanded');
-                                                        if(wasExpanded){
-                                                                video.play();
-                                                                if(typeof resumeRegistrationTimer === 'function') resumeRegistrationTimer();
-                                                        }
-                                                }
-                                        });
-                                });
-                </script>
+			document.addEventListener('DOMContentLoaded', () => {
+				const container = document.getElementById('progressContainer');
+				const video = document.getElementById('video');
+				const modal = document.getElementById('imageModal');
+				container.addEventListener('click', (e) => {
+					if(e.target.classList.contains('capture-thumb')) return;
+					container.classList.toggle('expanded');
+					if(container.classList.contains('expanded')){
+						video.pause();
+						if(typeof pauseRegistrationTimer === 'function') pauseRegistrationTimer();
+					} else {
+						video.play();
+						if(typeof resumeRegistrationTimer === 'function') resumeRegistrationTimer();
+					}
+					e.stopPropagation();
+				});
+				document.addEventListener('click', (e) => {
+					if(modal && modal.style.display === 'flex') return;
+					if(!container.contains(e.target)){
+						const wasExpanded = container.classList.contains('expanded');
+						container.classList.remove('expanded');
+						if(wasExpanded){
+							video.play();
+							if(typeof resumeRegistrationTimer === 'function') resumeRegistrationTimer();
+						}
+					}
+				});
+			});
+		</script>
 		
 		<div class="face-detection-container"  style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
 			<div class="video-wrapper">
