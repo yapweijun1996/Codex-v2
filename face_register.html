@@ -415,6 +415,15 @@
 			}
 			.modal .prev{ left:10px; }
 			.modal .next{ right:10px; }
+			
+			#video {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: relative !important;
+}
 		</style>
 		
 		<!-- Load face-api core library first -->
@@ -600,6 +609,10 @@
 		</div>
 		
 		<script>
+		var video = document.getElementById("video");
+video.setAttribute('playsinline', '');
+video.setAttribute('muted', '');
+video.setAttribute('autoplay', '');
 			/**
 			* ================================
 			* Face-API Configuration

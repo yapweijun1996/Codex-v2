@@ -461,7 +461,7 @@ async function camera_start() {
     var stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
 
-    // Wait for the video metadata to load and then play
+    // Wait for metadata to load, then play video (fixes blank video in many PWAs)
     video.onloadedmetadata = () => {
       video.play().catch(e => {
         console.warn('video.play() failed:', e);
