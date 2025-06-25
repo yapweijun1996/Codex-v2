@@ -450,24 +450,31 @@ function drawRegistrationOverlay(detection) {
 }
 
 async function camera_start() {
-	var video = document.getElementById(videoId);
-	if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-		console.error('getUserMedia not supported');
-		if (typeof showPermissionOverlay === 'function') showPermissionOverlay();
-		showMessage('error', 'Camera not supported in this browser.');
-		return;
-	}
-	try {
-		var stream = await navigator.mediaDevices.getUserMedia({ video: true });
-		video.srcObject = stream;
-		
-		const overlay = document.getElementById('permissionOverlay');
-		if (overlay) overlay.style.display = 'none';
-	} catch (error) {
-		console.error('Error accessing webcam:', error);
-		if (typeof showPermissionOverlay === 'function') showPermissionOverlay();
-		showMessage('error', 'Unable to access camera: ' + error.message);
-	}
+  var video = document.getElementById(videoId);
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    console.error('getUserMedia not supported');
+    if (typeof showPermissionOverlay === 'function') showPermissionOverlay();
+    showMessage('error', 'Camera not supported in this browser.');
+    return;
+  }
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+
+    // Wait for the video metadata to load and then play
+    video.onloadedmetadata = () => {
+      video.play().catch(e => {
+        console.warn('video.play() failed:', e);
+      });
+    };
+
+    const overlay = document.getElementById('permissionOverlay');
+    if (overlay) overlay.style.display = 'none';
+  } catch (error) {
+    console.error('Error accessing webcam:', error);
+    if (typeof showPermissionOverlay === 'function') showPermissionOverlay();
+    showMessage('error', 'Unable to access camera: ' + error.message);
+  }
 }
 
 async function camera_stop() {
