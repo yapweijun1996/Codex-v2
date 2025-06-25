@@ -415,15 +415,6 @@
 			}
 			.modal .prev{ left:10px; }
 			.modal .next{ right:10px; }
-			
-			#video {
-  width: 100% !important;
-  height: auto !important;
-  display: block !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  position: relative !important;
-}
 		</style>
 		
 		<!-- Load face-api core library first -->
@@ -483,16 +474,163 @@
 		</script>
 	</head>
 	<body>
-		<video id="video" autoplay muted playsinline style="width:100%; max-width:400px;"></video>
-  <script>
-    const video = document.getElementById('video');
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-        video.onloadedmetadata = () => video.play();
-      })
-      .catch(e => console.error('Camera error:', e));
-  </script>
+		<div id="loadingOverlay">Loading face detection models...</div>
+		<div id="orientationOverlay">Please rotate your device to portrait orientation for best results.</div>
+		<div id="permissionOverlay">Camera access is required. Please grant permission or open this page in a supported browser.</div>
+		<div id="instructionsOverlay">
+			<div>
+				<p>Step 1: Position your face within the frame.</p>
+				<p>Step 2: Slowly turn your head left and right.</p>
+				<p>Step 3: Tap capture when ready.</p>
+				<button onclick="hideInstructions()">Got it</button>
+			</div>
+		</div>
+		<div id="timeoutOverlay">
+			<div>
+				<p>Registration timed out.</p>
+				<p>Please ensure good lighting and try again.</p>
+				<button onclick="hideTimeoutOverlay(); restartRegistration()">Retry</button>
+				<button onclick="hideTimeoutOverlay(); cancelRegistration()">Cancel</button>
+			</div>
+		</div>
+		<div style="display:none;">
+			<h1>Face Detection</h1>
+			<a href="#" onclick="urlReplace('index.html')">Go to Index</a><br>
+			<input type="file" id="jsonFileInput" accept=".json" onchange="handleJsonFileInput(event)" multiple>
+			<textarea class="user_face_id_json" style="display:none;"></textarea>
+			<!-- Add user ID and name inputs -->
+			<label>User ID: <input type="text" id="userIdInput" placeholder="Enter user ID"></label>
+			<label>User Name: <input type="text" id="userNameInput" placeholder="Enter user name"></label><br>
+		</div>
+		<div id="progressContainer" class="controls">
+			<span id="progressText">0/20 captures</span>
+			<span id="timerText"></span>
+			<div id="progressBar"><div id="progressFill"></div></div>
+			<div id="progressButtons">
+				<div style="display:none;">
+					<button id="retakeBtn" class="ctrl-btn">Retake Last</button>
+				</div>
+				<button id="restartBtn" class="ctrl-btn ctrl-btn-warning">Restart</button>
+				<button id="cancelBtn" class="ctrl-btn ctrl-btn-danger">Cancel</button>
+				<button id="downloadBtn" class="ctrl-btn ctrl-btn-success" style="display:none;">Download</button>
+			</div>
+			<div id="capturePreview"></div>
+		</div>
+		<div id="imageModal" class="modal">
+			<span class="close">&times;</span>
+			<span class="prev">&#10094;</span>
+			<img>
+			<span class="next">&#10095;</span>
+		</div>
+		<script>
+			function getParam(name) {
+				const params = new URLSearchParams(window.location.search);
+				return params.get(name);
+			}
+			document.addEventListener('DOMContentLoaded', async () => {
+				const defId = getParam('userid') || 'test001';
+				const defName = getParam('username') || 'test';
+				document.getElementById('userIdInput').value = defId;
+				document.getElementById('userNameInput').value = defName;
+				checkOrientation();
+				if(!localStorage.getItem('instructionsShown')){
+					showInstructions();
+				}
+			});
+			
+			function checkOrientation(){
+				const overlay = document.getElementById('orientationOverlay');
+				const isMobile = window.matchMedia('(max-width: 768px)').matches;
+				if(isMobile && window.innerWidth > window.innerHeight){
+					overlay.style.display = 'flex';
+				}else{
+					overlay.style.display = 'none';
+				}
+			}
+			
+			window.addEventListener('orientationchange', checkOrientation);
+			window.addEventListener('resize', checkOrientation);
+			
+			document.addEventListener('DOMContentLoaded', () => {
+				const container = document.getElementById('progressContainer');
+				const video = document.getElementById('video');
+				const modal = document.getElementById('imageModal');
+				container.addEventListener('click', (e) => {
+					if(e.target.classList.contains('capture-thumb')) return;
+					container.classList.toggle('expanded');
+					if(container.classList.contains('expanded')){
+						video.pause();
+						if(typeof pauseRegistrationTimer === 'function') pauseRegistrationTimer();
+					} else {
+						video.play();
+						if(typeof resumeRegistrationTimer === 'function') resumeRegistrationTimer();
+					}
+					e.stopPropagation();
+				});
+				document.addEventListener('click', (e) => {
+					if(modal && modal.style.display === 'flex') return;
+					if(!container.contains(e.target)){
+						const wasExpanded = container.classList.contains('expanded');
+						container.classList.remove('expanded');
+						if(wasExpanded){
+							video.play();
+							if(typeof resumeRegistrationTimer === 'function') resumeRegistrationTimer();
+						}
+					}
+				});
+			});
+		</script>
+		
+		<div class="face-detection-container"  style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+			<div class="video-wrapper">
+				<video id="video" width="640" height="480" autoplay playsinline muted></video>
+				<!-- Hidden canvas for inference: captures each video frame to send to the worker for face detection -->
+				<canvas id="canvas" class="overlay"></canvas>
+				<!-- Overlay canvas for drawing facial landmarks on top of the video -->
+				<canvas id="canvas2" class="overlay"></canvas>
+				<!-- Overlay canvas for drawing face bounding boxes and confidence scores -->
+				<canvas id="canvas3" class="overlay"></canvas>
+				<div id="messageOverlay">
+					<div id="registrationMessage"></div>
+					<p id="tips">Keep your face centered and move slowly.</p>
+				</div>
+			</div>
+			<!-- Snapshot canvas: displays the captured face image along with the confidence percentage -->
+			<canvas id="canvas_output" class="snapshot"></canvas>
+		</div>
+		
+		<script>
+			/**
+			* ================================
+			* Face-API Configuration
+			* -------------------------------
+			* faceapi_action
+			*   • "verify"   – Compare the live video frame against a previously
+			*     registered reference descriptor (used in a face-verification flow).
+			*   • "register" – Capture the detected face descriptor and store it as
+			*     a new reference (used when enrolling a new user).
+			*
+			* face_detector_options_setup
+			*   These options are forwarded to face-api.js TinyFaceDetector and allow
+			*   you to balance performance vs. accuracy according to your use-case.
+			*   • inputSize        – Dimension (square) of the NN input. Larger numbers
+			*                         improve accuracy but require more computation.
+			*   • scoreThreshold   – Minimum confidence score (0-1) that a detection
+			*                         must reach to be considered valid. 0.8 = 80%.
+			*   • maxDetectedFaces – Hard limit on how many faces should be processed
+			*                         per frame. Keeping it at 1 speeds things up when
+			*                         you only care about the user in front of the
+			*                         camera.
+			* ================================
+			*/
+			var faceapi_action = "register"; // verify, register
+			var warmup_completed = [hideLoadingOverlay, camera_start, video_face_detection];
+			var face_detector_options_setup = {
+				inputSize: 128,
+				scoreThreshold: 0.75, // 0.8 = 80%
+				maxDetectedFaces: 1,
+			};
+		</script>
 		
 	</body>
 </html>
