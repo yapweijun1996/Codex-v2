@@ -631,5 +631,54 @@
 				maxDetectedFaces: 1,
 			};
 		</script>
+		<!-- Console Log/Error/Warning Viewer Snippet -->
+								<div id="consoleOutput" style="background:##111;color:##33ff33;padding:12px;height:180px;overflow-y:auto;font-size:14px;border-radius:8px;margin:12px;box-shadow:0 2px 8px ##0004;white-space:pre-wrap;">
+								</div>
+								<script>
+									(function() {
+										const outputDiv = document.getElementById('consoleOutput');
+										const colors = {
+											log: '##33ff33',
+											error: '##ff4444',
+											warn: '##ffaa33'
+										};
+										// Helper to print any message
+										function printMsg(args, type='log') {
+											args.forEach(arg => {
+												const span = document.createElement('span');
+												span.style.color = colors[type] || colors.log;
+												span.textContent =
+												(typeof arg === "object" ? JSON.stringify(arg) : String(arg)) + "\n";
+												outputDiv.appendChild(span);
+											});
+											// Auto scroll to bottom
+											outputDiv.scrollTop = outputDiv.scrollHeight;
+										}
+										// Patch console.log
+										const oldLog = console.log;
+										console.log = function(...args) {
+											printMsg(args, 'log');
+											oldLog.apply(console, args);
+										};
+										// Patch console.error
+										const oldError = console.error;
+										console.error = function(...args) {
+											printMsg(args, 'error');
+											oldError.apply(console, args);
+										};
+										// Patch console.warn
+										const oldWarn = console.warn;
+										console.warn = function(...args) {
+											printMsg(args, 'warn');
+											oldWarn.apply(console, args);
+										};
+										
+										// Example logs
+										console.log("Console log snippet ready!");
+										console.warn("This is a warning");
+										console.error("This is an error!");
+										setTimeout(() => console.log("This log is delayed by 2 seconds."), 2000);
+									})();
+								</script>
 	</body>
 </html>
