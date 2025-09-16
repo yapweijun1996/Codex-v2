@@ -26,6 +26,7 @@
 <body>
     <h1>Excel Parser</h1>
     <input type="file" id="excelFile" accept=".xls,.xlsx,.xlsm,.csv" />
+    <select id="sheetSelector"></select>
     <button id="parseBtn">Parse</button>
     <button id="exportBtn">Export CSV</button>
     <pre id="output"></pre>
@@ -36,6 +37,7 @@
         const outputEl = document.getElementById('output');
         const previewEl = document.getElementById('preview');
         const exportBtn = document.getElementById('exportBtn');
+        const sheetSelector = document.getElementById('sheetSelector');
         let currentData = [];
         let currentHeaders = [];
 
@@ -120,6 +122,29 @@
             return normalizedRow;
         };
 
+        const populateSheetSelector = (sheetNames) => {
+            const previousSelection = sheetSelector.value;
+
+            sheetSelector.innerHTML = '';
+
+            sheetNames.forEach((sheetName) => {
+                const option = document.createElement('option');
+                option.value = sheetName;
+                option.textContent = sheetName;
+                sheetSelector.appendChild(option);
+            });
+
+            if (sheetNames.includes(previousSelection)) {
+                sheetSelector.value = previousSelection;
+            } else if (sheetNames.length > 0) {
+                sheetSelector.value = sheetNames[0];
+            }
+
+            sheetSelector.disabled = sheetNames.length === 0;
+        };
+
+        sheetSelector.disabled = true;
+
         document.getElementById('parseBtn').onclick = () => {
             const fileInput = document.getElementById('excelFile');
             const file = fileInput.files[0];
@@ -142,9 +167,17 @@
                     return;
                 }
 
-                const firstSheetName = workbook.SheetNames[0];
-                const firstSheet = workbook.Sheets[firstSheetName];
-                const rawJsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: null });
+                populateSheetSelector(workbook.SheetNames);
+
+                const selectedSheetName = sheetSelector.value || workbook.SheetNames[0];
+                const selectedSheet = workbook.Sheets[selectedSheetName];
+
+                if (!selectedSheet) {
+                    outputEl.textContent = `Sheet "${selectedSheetName}" not found in the workbook.`;
+                    return;
+                }
+
+                const rawJsonData = XLSX.utils.sheet_to_json(selectedSheet, { defval: null });
                 const normalizedData = rawJsonData.map(normalizeRow);
 
                 outputEl.textContent = JSON.stringify(normalizedData, null, 2);
