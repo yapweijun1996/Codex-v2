@@ -143,7 +143,7 @@
             return columnKeyMap[normalizedKey] || trimmedKey;
         };
 
-        const numericPattern = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
+        const numericPattern = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/; // 正则表达式: 匹配标准的整数或小数（含可选负号）
 
         const normalizeCellValue = (value) => {
             if (value === null || value === undefined) {
@@ -163,7 +163,7 @@
                 return null;
             }
 
-            const hasParentheses = /^\(.*\)$/.test(trimmed);
+            const hasParentheses = /^\(.*\)$/.test(trimmed); // 正则表达式: 判断是否被括号包裹以表示负值
             const unwrappedValue = hasParentheses ? trimmed.slice(1, -1).trim() : trimmed;
             const withoutCurrency = unwrappedValue.replace(/[$,]/g, '');
             const cleanedCandidate = withoutCurrency.trim();
@@ -172,11 +172,48 @@
                 return null;
             }
 
-            const candidate = hasParentheses ? `-${cleanedCandidate}` : cleanedCandidate;
+            let workingValue = cleanedCandidate;
+
+            const hasTrailingMinus = /-$/.test(workingValue); // 正则表达式: 捕捉尾随的减号写法（例如 123-）
+            if (hasTrailingMinus) {
+                workingValue = workingValue.slice(0, -1).trim();
+            }
+
+            const isPercentage = /%$/.test(workingValue); // 正则表达式: 检测末尾百分号表示百分比
+            if (isPercentage) {
+                workingValue = workingValue.slice(0, -1).trim();
+            }
+
+            if (workingValue === '') {
+                return null;
+            }
+
+            let candidate = workingValue;
+            let signMultiplier = 1;
+
+            if (hasParentheses) {
+                signMultiplier *= -1;
+            }
+
+            if (hasTrailingMinus) {
+                signMultiplier *= -1;
+            }
+
+            if (signMultiplier === -1) {
+                if (candidate.startsWith('-')) {
+                    candidate = candidate.slice(1).trim();
+                }
+                candidate = `-${candidate}`;
+            }
 
             if (numericPattern.test(candidate)) {
                 const num = parseFloat(candidate);
-                return Number.isNaN(num) ? null : num;
+                if (Number.isNaN(num)) {
+                    return null;
+                }
+
+                const finalValue = isPercentage ? num / 100 : num;
+                return finalValue;
             }
 
             return trimmed;
