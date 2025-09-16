@@ -41,12 +41,93 @@
         let currentData = [];
         let currentHeaders = [];
 
-        const columnKeyMap = {
-            project: 'project',
-            'project name': 'project',
-            budget: 'budget',
-            committed: 'committed',
+        const columnKeyAliases = {
+            project: ['project name', 'project title', 'proj', 'proj.', '项目', '项目名称'],
+            project_code: ['project code', 'project no', 'project no.', 'proj code', 'proj no', 'proj no.', 'project id', 'proj id', '项目代码', '项目编号', '项目代号', '项目号'],
+            month: ['for month of', 'month', 'month of', '月份', '期间', '月度'],
+            item: ['item', '类别', '分项', '细项', '科目'],
+            item_code: ['code', 'item code', 'item no', 'item no.', '编号', '代号', '代码', '项号'],
+            description: ['description', 'desc', 'item description', '说明', '描述', '项目描述', '细项说明'],
+            budget: ['budget', '总预算', '预算总额', '预算(总计)', '预算总计'],
+            budget_original: ['original budget', 'budget original', 'budget (original)', 'original', '原始预算', '预算原始', '预算（原始）', '预算-原始'],
+            budget_revised: ['revised budget', 'budget revised', 'budget (revised)', 'revised', '修订预算', '调整预算', '预算调整', '预算（调整）', '预算-调整'],
+            budget_to_date: [
+                'budget to date',
+                'budget (to date)',
+                'budget-to-date',
+                'budget todate',
+                'budget(todate)',
+                'budget td',
+                'budget_td',
+                'budget ytd',
+                'budget-ytd',
+                '预算累计',
+                '预算至今',
+                '预算到期',
+                '预算-累计',
+                '预算（至今）',
+                '预算ytd',
+            ],
+            committed: ['committed', 'commitment', 'commtd', '已承诺', '承诺金额', '承诺'],
+            committed_to_date: [
+                'committed to date',
+                'committed (to date)',
+                'committed-to-date',
+                'committed todate',
+                'committed(todate)',
+                'commtd to date',
+                'commtd-to-date',
+                'commtd ytd',
+                'committed ytd',
+                '承诺累计',
+                '承诺至今',
+                '承诺-累计',
+                '承诺ytd',
+            ],
+            certified: ['certified', 'cert', '已认证', '认证金额', '认证'],
+            certified_to_date: [
+                'certified to date',
+                'certified (to date)',
+                'certified-to-date',
+                'certified todate',
+                'certified(todate)',
+                'cert to date',
+                'cert-to-date',
+                'cert ytd',
+                'certified ytd',
+                '认证累计',
+                '认证至今',
+                '认证-累计',
+                '认证ytd',
+            ],
+            final: ['final', '最终', '终值'],
+            final_forecast: ['final forecast', 'forecast final', 'final fcst', '最终预测', '最终预估', '最终预测值'],
+            forecast: ['forecast', 'fcst', '预测', '预估', '预测值'],
+            variance: ['variance', 'var', '差异', '差额', '偏差'],
+            variance_forecast: ['variance forecast', 'forecast variance', 'variance fcst', '差异预测', '差异预估', '差额预测'],
+            additional: ['additional', 'add', 'additional works', '额外', '附加'],
+            remarks: ['remarks', 'remark', '备注', '说明'],
+            remarks_previous: ['remarks_1', 'remarks (prev)', 'previous remarks', 'remarks prev', '上月备注', '备注(上月)', '备注-上月'],
+            claim: ['claim', '索赔', '申索'],
         };
+
+        const columnKeyMap = Object.entries(columnKeyAliases).reduce((map, [canonicalKey, aliases]) => {
+            const aliasList = Array.isArray(aliases) ? aliases : [];
+            const normalizedAliases = new Set([canonicalKey, ...aliasList]);
+
+            normalizedAliases.forEach((alias) => {
+                if (typeof alias !== 'string') {
+                    return;
+                }
+
+                const normalizedAlias = alias.trim().toLowerCase();
+                if (normalizedAlias !== '') {
+                    map[normalizedAlias] = canonicalKey;
+                }
+            });
+
+            return map;
+        }, {});
 
         const getCanonicalKey = (key) => {
             if (typeof key !== 'string') {
