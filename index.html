@@ -39,6 +39,87 @@
         let currentData = [];
         let currentHeaders = [];
 
+        const columnKeyMap = {
+            project: 'project',
+            'project name': 'project',
+            budget: 'budget',
+            committed: 'committed',
+        };
+
+        const getCanonicalKey = (key) => {
+            if (typeof key !== 'string') {
+                return key;
+            }
+
+            const trimmedKey = key.trim();
+            if (trimmedKey === '') {
+                return null;
+            }
+
+            const normalizedKey = trimmedKey.toLowerCase();
+            return columnKeyMap[normalizedKey] || trimmedKey;
+        };
+
+        const numericPattern = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
+
+        const normalizeCellValue = (value) => {
+            if (value === null || value === undefined) {
+                return null;
+            }
+
+            if (typeof value === 'number') {
+                return value;
+            }
+
+            if (typeof value !== 'string') {
+                return value;
+            }
+
+            const trimmed = value.trim();
+            if (trimmed === '') {
+                return null;
+            }
+
+            const hasParentheses = /^\(.*\)$/.test(trimmed);
+            const unwrappedValue = hasParentheses ? trimmed.slice(1, -1).trim() : trimmed;
+            const withoutCurrency = unwrappedValue.replace(/[$,]/g, '');
+            const cleanedCandidate = withoutCurrency.trim();
+
+            if (cleanedCandidate === '') {
+                return null;
+            }
+
+            const candidate = hasParentheses ? `-${cleanedCandidate}` : cleanedCandidate;
+
+            if (numericPattern.test(candidate)) {
+                const num = parseFloat(candidate);
+                return Number.isNaN(num) ? null : num;
+            }
+
+            return trimmed;
+        };
+
+        const normalizeRow = (row) => {
+            const normalizedRow = {};
+
+            Object.entries(row).forEach(([key, value]) => {
+                const canonicalKey = getCanonicalKey(key);
+                if (canonicalKey === null || canonicalKey === undefined) {
+                    return;
+                }
+
+                const normalizedValue = normalizeCellValue(value);
+
+                if (normalizedRow[canonicalKey] === undefined) {
+                    normalizedRow[canonicalKey] = normalizedValue;
+                } else if (normalizedRow[canonicalKey] === null && normalizedValue !== null) {
+                    normalizedRow[canonicalKey] = normalizedValue;
+                }
+            });
+
+            return normalizedRow;
+        };
+
         document.getElementById('parseBtn').onclick = () => {
             const fileInput = document.getElementById('excelFile');
             const file = fileInput.files[0];
@@ -63,23 +144,30 @@
 
                 const firstSheetName = workbook.SheetNames[0];
                 const firstSheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: null });
+                const rawJsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: null });
+                const normalizedData = rawJsonData.map(normalizeRow);
 
-                outputEl.textContent = JSON.stringify(jsonData, null, 2);
-                console.log('Parsed JSON data:', jsonData);
+                outputEl.textContent = JSON.stringify(normalizedData, null, 2);
+                console.log('Parsed JSON data:', normalizedData);
 
                 previewEl.innerHTML = '';
 
-                if (!jsonData.length) {
+                if (!normalizedData.length) {
                     return;
                 }
 
-                const headers = Array.from(jsonData.reduce((set, row) => {
-                    Object.keys(row).forEach((key) => set.add(key));
-                    return set;
-                }, new Set()));
+                const headerSet = new Set();
+                const headers = [];
+                normalizedData.forEach((row) => {
+                    Object.keys(row).forEach((key) => {
+                        if (!headerSet.has(key)) {
+                            headerSet.add(key);
+                            headers.push(key);
+                        }
+                    });
+                });
                 currentHeaders = headers;
-                currentData = jsonData;
+                currentData = normalizedData;
 
                 const table = document.createElement('table');
                 const thead = document.createElement('thead');
@@ -96,7 +184,7 @@
 
                 const tbody = document.createElement('tbody');
 
-                jsonData.forEach((row) => {
+                normalizedData.forEach((row) => {
                     const tr = document.createElement('tr');
 
                     headers.forEach((header) => {
