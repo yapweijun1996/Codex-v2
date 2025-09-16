@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Parser</title>
+</head>
+<body>
+    <h1>Excel Parser</h1>
+    <input type="file" id="excelFile" accept=".xls,.xlsx,.xlsm,.csv" />
+    <button id="parseBtn">Parse</button>
+    <pre id="output"></pre>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@latest/dist/xlsx.full.min.js"></script>
+    <script>
+        const outputEl = document.getElementById('output');
+
+        document.getElementById('parseBtn').onclick = () => {
+            const fileInput = document.getElementById('excelFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                outputEl.textContent = 'Please select an Excel file first.';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                if (!workbook.SheetNames.length) {
+                    outputEl.textContent = 'No sheets found in the workbook.';
+                    return;
+                }
+
+                const firstSheetName = workbook.SheetNames[0];
+                const firstSheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: null });
+
+                outputEl.textContent = JSON.stringify(jsonData, null, 2);
+                console.log('Parsed JSON data:', jsonData);
+            };
+            reader.onerror = () => {
+                outputEl.textContent = 'Failed to read the file.';
+            };
+
+            reader.readAsArrayBuffer(file);
+        };
+    </script>
+</body>
+</html>
