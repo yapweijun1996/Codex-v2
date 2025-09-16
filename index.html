@@ -4,16 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Excel Parser</title>
+    <style>
+        #preview {
+            max-height: 400px;
+            overflow: auto;
+        }
+
+        #preview table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #preview th,
+        #preview td {
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
     <h1>Excel Parser</h1>
     <input type="file" id="excelFile" accept=".xls,.xlsx,.xlsm,.csv" />
     <button id="parseBtn">Parse</button>
     <pre id="output"></pre>
+    <div id="preview"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@latest/dist/xlsx.full.min.js"></script>
     <script>
         const outputEl = document.getElementById('output');
+        const previewEl = document.getElementById('preview');
 
         document.getElementById('parseBtn').onclick = () => {
             const fileInput = document.getElementById('excelFile');
@@ -40,6 +60,48 @@
 
                 outputEl.textContent = JSON.stringify(jsonData, null, 2);
                 console.log('Parsed JSON data:', jsonData);
+
+                previewEl.innerHTML = '';
+
+                if (!jsonData.length) {
+                    return;
+                }
+
+                const headers = Array.from(jsonData.reduce((set, row) => {
+                    Object.keys(row).forEach((key) => set.add(key));
+                    return set;
+                }, new Set()));
+
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+
+                headers.forEach((header) => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+
+                jsonData.forEach((row) => {
+                    const tr = document.createElement('tr');
+
+                    headers.forEach((header) => {
+                        const td = document.createElement('td');
+                        const value = row[header];
+                        td.textContent = value === null || value === undefined ? '' : value;
+                        tr.appendChild(td);
+                    });
+
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(tbody);
+                previewEl.appendChild(table);
             };
             reader.onerror = () => {
                 outputEl.textContent = 'Failed to read the file.';
