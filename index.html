@@ -27,6 +27,7 @@
     <h1>Excel Parser</h1>
     <input type="file" id="excelFile" accept=".xls,.xlsx,.xlsm,.csv" />
     <button id="parseBtn">Parse</button>
+    <button id="exportBtn">Export CSV</button>
     <pre id="output"></pre>
     <div id="preview"></div>
 
@@ -34,6 +35,9 @@
     <script>
         const outputEl = document.getElementById('output');
         const previewEl = document.getElementById('preview');
+        const exportBtn = document.getElementById('exportBtn');
+        let currentData = [];
+        let currentHeaders = [];
 
         document.getElementById('parseBtn').onclick = () => {
             const fileInput = document.getElementById('excelFile');
@@ -43,6 +47,9 @@
                 outputEl.textContent = 'Please select an Excel file first.';
                 return;
             }
+
+            currentData = [];
+            currentHeaders = [];
 
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -71,6 +78,8 @@
                     Object.keys(row).forEach((key) => set.add(key));
                     return set;
                 }, new Set()));
+                currentHeaders = headers;
+                currentData = jsonData;
 
                 const table = document.createElement('table');
                 const thead = document.createElement('thead');
@@ -108,6 +117,44 @@
             };
 
             reader.readAsArrayBuffer(file);
+        };
+
+        const escapeCsvValue = (value) => {
+            if (value === null || value === undefined) {
+                return '';
+            }
+
+            const stringValue = String(value);
+            if (/[",\n]/.test(stringValue)) {
+                return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+
+            return stringValue;
+        };
+
+        exportBtn.onclick = () => {
+            if (!currentData.length || !currentHeaders.length) {
+                outputEl.textContent = 'Please parse an Excel file before exporting.';
+                return;
+            }
+
+            const csvRows = [currentHeaders.map(escapeCsvValue).join(',')];
+
+            currentData.forEach((row) => {
+                const csvRow = currentHeaders.map((header) => escapeCsvValue(row[header]));
+                csvRows.push(csvRow.join(','));
+            });
+
+            const csvString = csvRows.join('\r\n');
+            const blob = new Blob([csvString], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'converted.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         };
     </script>
 </body>
