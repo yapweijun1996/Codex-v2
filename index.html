@@ -187,16 +187,8 @@
             .preview { max-height: 50vh; }
         }
         
-        /* Mobile responsive tweaks for the DataTables preview */
+        /* Mobile responsive tweaks for the converted preview */
         @media (max-width: 640px) {
-          /* Disable sticky/frozen columns on small screens to avoid overlap */
-          .preview td:first-child, .preview th:first-child,
-          .preview td:nth-child(2), .preview th:nth-child(2) {
-            position: static !important;
-            left: auto !important;
-            box-shadow: none !important;
-          }
-          /* Make controls stack vertically and enlarge touch targets */
           #dt-controls {
             flex-direction: column;
             gap: 8px;
@@ -205,14 +197,8 @@
             width: 100%;
             min-height: 44px;
           }
-          /* Ensure DataTables uses full width and child rows show cleanly */
-          table.dataTable.display { width: 100% !important; }
-          table.dataTable.no-footer { border-bottom: 0; }
-          /* Buttons responsive wrapping */
-          .dt-buttons { display:flex; gap:8px; flex-wrap:wrap; }
         }
     </style>
-    <!-- Add jQuery and DataTables CSS from CDN -->
 </head>
 <body>
     <div class="container">

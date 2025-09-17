@@ -7,11 +7,11 @@ A lightweight, browser‑only tool for turning messy Excel/CSV sheets into clean
 - File support: `.xls`, `.xlsx`, `.xlsm`, `.csv` (SheetJS offline bundle).
 - Smart CSV parsing: detects parent/child headers; disambiguates duplicate labels (e.g., two "To Date").
 - Clean schema: normalized column names with consistent order (see "Converted Data Schema").
-- Auto‑parse on select: choosing a file starts parsing immediately.
+- Auto-parse on select: choosing a file starts parsing immediately.
 - Tabs UI: switch between `Raw` and `Converted` views.
-- Usability: sticky header + frozen first columns, horizontal scroll with shadows, mobile responsive.
-- Converted table controls: global search, optional column scope, rows/page, pagination, export filtered/all.
-- Numeric formatting: thousands separator; right‑aligned numbers.
+- Usability: sticky header for readability, horizontal scroll with shadows, mobile responsive.
+- Converted table controls: global search, optional column scope, rows/page, export all vs. filtered subset.
+- Numeric formatting: thousands separator; right-aligned numbers in numeric columns.
 
 ## Getting Started
 
@@ -43,16 +43,15 @@ The Converted table outputs columns in a stable order:
     The month pairs are derived dynamically from the CSV header (e.g., `Sep-25`, `Jun-25`).
 Last. `Additional_Claim`
 
-## Developer API (js/parser.js)
+## Architecture & Developer APIs
 
-- `parseCsvData(csvString, manualHeaderRow?)`
-  - Returns `{ headers, data, raw }` where `headers` are the Converted headers above, `data` are normalized rows, and `raw` is the pre‑header array‑of‑arrays for the Raw preview.
-- `toLongFormat(records, measures?)`
-  - Converts the wide `data` into tidy rows: `{ project, item_code, item_description, metric, value }` for easy aggregations.
+- `js/app.js` centralizes UI orchestration (file input handling, status messages, tab toggles, exports) and consumes the modules below.
+- `js/parser.js` exposes `csvParser.parse(csvString, manualHeaderRow?)` which returns `{ headers, data, raw, meta }` and a `csvParser.toLongFormat(records, measures?)` helper for downstream analytics.
+- `js/datatable.js` exports a dependency-light `DataTableController` that falls back to a native table and upgrades to Tabulator when available.
 
 ## Optional: Rich Data Grid
 
-This app includes a graceful fallback to a native table and can auto‑upgrade to [Tabulator](https://tabulator.info/) if its files are present locally.
+This app includes a native table controller and can auto-upgrade to [Tabulator](https://tabulator.info/) if its files are present locally.
 
 1. Add to the repo:
    - `lib/tabulator.min.js`
