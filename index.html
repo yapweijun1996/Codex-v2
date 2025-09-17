@@ -40,6 +40,18 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
+        /* Tabs */
+        .tab {
+            background: var(--accent);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: .5rem 1rem;
+        }
+        .tab.active { background: var(--panel); border-color: var(--primary); color: var(--primary); }
+        /* Panels */
+        .panel { width: 100%; }
+        .panel-head { display:flex; justify-content: space-between; align-items: center; margin-bottom:.25rem; }
+        .panel-actions button { margin-left:.5rem; }
         h1 {
             text-align: center;
             color: #1a253c;
@@ -124,6 +136,13 @@
             border-radius: 8px;
             background: var(--panel);
         }
+        /* Scroll shadow hints */
+        .with-shadows { position: relative; }
+        .with-shadows::before, .with-shadows::after {
+            content: ""; position: sticky; top: 0; width: 12px; height: 100%; z-index: 3; pointer-events: none;
+        }
+        .with-shadows::before { left: 0; box-shadow: inset 10px 0 8px -10px rgba(0,0,0,.25); }
+        .with-shadows::after  { float: right; right: 0; box-shadow: inset -10px 0 8px -10px rgba(0,0,0,.25); }
         .preview table {
             border-collapse: separate;
             border-spacing: 0;
@@ -167,6 +186,7 @@
 
         /* Right alignment for numeric cells when flagged */
         .preview td[data-type="number"] { text-align: right; }
+        .num { text-align: right; }
 
         /* Mobile controls */
         @media (max-width: 640px) {
@@ -174,6 +194,7 @@
                 flex-direction: column;
                 align-items: stretch;
             }
+            #tabs { flex-direction: row; }
             button, select, input[type="number"] {
                 width: 100%;
                 min-height: 44px;
@@ -205,14 +226,55 @@
             </select>
         </div>
         <div id="status" class="status info">Select a file to begin</div>
+        <!-- Tabs -->
+        <div class="options" id="tabs" style="margin-top:.5rem;">
+            <button id="tab-raw" class="tab active" type="button">Raw</button>
+            <button id="tab-converted" class="tab" type="button">Converted</button>
+        </div>
+
         <div class="preview-container">
-            <div id="raw-container" class="hidden">
-                <h2>Raw Data</h2>
-                <div id="rawPreview" class="preview"></div>
+            <!-- RAW PANEL -->
+            <div id="raw-container" class="panel hidden">
+                <div class="panel-head">
+                    <h2>Raw Data</h2>
+                </div>
+                <div class="preview with-shadows" id="rawScroll">
+                    <div id="rawPreview"></div>
+                </div>
             </div>
-            <div id="converted-container" class="hidden">
-                <h2>Converted Data</h2>
-                <div id="convertedPreview" class="preview"></div>
+
+            <!-- CONVERTED PANEL -->
+            <div id="converted-container" class="panel hidden">
+                <div class="panel-head">
+                    <h2>Converted Data</h2>
+                    <div class="panel-actions">
+                        <button id="exportFilteredBtn" disabled>Export Filtered</button>
+                    </div>
+                </div>
+                <!-- Unified DataTable controls -->
+                <div id="dt-controls" class="options hidden" style="margin-top: .25rem;">
+                    <label for="dtSearch">Search</label>
+                    <input type="text" id="dtSearch" placeholder="Type to search..." style="flex:1; min-width: 220px;">
+                    <label for="dtFilterCol">in</label>
+                    <select id="dtFilterCol"></select>
+                    <label for="dtPageSize">Rows</label>
+                    <select id="dtPageSize">
+                        <option>10</option>
+                        <option selected>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                </div>
+                <div id="dt-pager" class="options hidden" style="justify-content: space-between; margin-top:.5rem;">
+                    <div id="dt-summary" class="status info" style="margin:0;"></div>
+                    <div>
+                        <button id="dtPrev">Prev</button>
+                        <button id="dtNext">Next</button>
+                    </div>
+                </div>
+                <div class="preview with-shadows" id="convertedScroll">
+                    <div id="convertedPreview"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -232,12 +294,35 @@
         const rawContainer = document.getElementById('raw-container');
         const convertedContainer = document.getElementById('converted-container');
         const fileNameEl = document.getElementById('file-name');
+        const tabs = { raw: document.getElementById('tab-raw'), converted: document.getElementById('tab-converted') };
+        const rawScroll = document.getElementById('rawScroll');
+        const convertedScroll = document.getElementById('convertedScroll');
+        // DataTable controls
+        const dtControls = document.getElementById('dt-controls');
+        const dtSearch = document.getElementById('dtSearch');
+        const dtFilterCol = document.getElementById('dtFilterCol');
+        const dtPageSize = document.getElementById('dtPageSize');
+        const dtPager = document.getElementById('dt-pager');
+        const dtPrev = document.getElementById('dtPrev');
+        const dtNext = document.getElementById('dtNext');
+        const dtSummary = document.getElementById('dt-summary');
+        const exportFilteredBtn = document.getElementById('exportFilteredBtn');
+
+        // Optional: Tabulator integration (if lib/tabulator.min.js is present)
+        let tabulatorTable = null;
+        const useTabulator = () => typeof window.Tabulator !== 'undefined';
 
         // --- Global State ---
         let currentRawData = [];
         let currentHeaders = [];
         let currentConvertedData = [];
         let currentFileName = 'exported_data.csv';
+        // DataTable state
+        let filteredConvertedData = [];
+        let currentPage = 1;
+        let rowsPerPage = 25;
+        let searchQuery = '';
+        let filterColumn = '';
 
         // --- Core Application Logic ---
 
@@ -270,8 +355,19 @@
                     currentHeaders = headers;
                     currentConvertedData = data;
 
+                    // Initialize DataTable state
+                    filteredConvertedData = [...currentConvertedData];
+                    currentPage = 1;
+                    rowsPerPage = parseInt(dtPageSize.value, 10) || 25;
+                    // Populate filter column options
+                    dtFilterCol.innerHTML = '<option value="">All columns</option>' +
+                        currentHeaders.map(h => `<option value="${h}">${h}</option>`).join('');
+                    dtControls.classList.remove('hidden');
+                    dtPager.classList.remove('hidden');
+                    exportFilteredBtn.disabled = false;
+
                     renderRawPreview();
-                    renderConvertedPreview();
+                    recalcAndRenderConverted();
                     updateStatus('File parsed successfully. Ready for export.', 'success');
                     exportBtn.disabled = false;
 
@@ -288,6 +384,40 @@
             };
             
             reader.readAsText(file, encoding);
+        }
+
+        // Recompute filtered data and render current page
+        function recalcAndRenderConverted() {
+            // Filter (native mode; Tabulator uses its own filter)
+            const q = (searchQuery || '').toLowerCase();
+            const col = filterColumn;
+            filteredConvertedData = currentConvertedData.filter(row => {
+                if (!q) return true;
+                if (col) {
+                    const v = row[col];
+                    return v !== null && typeof v !== 'undefined' && String(v).toLowerCase().includes(q);
+                }
+                // search across all columns
+                return currentHeaders.some(k => {
+                    const v = row[k];
+                    return v !== null && typeof v !== 'undefined' && String(v).toLowerCase().includes(q);
+                });
+            });
+            // Clamp current page
+            if (!useTabulator()) {
+                const totalPages = Math.max(1, Math.ceil(filteredConvertedData.length / rowsPerPage));
+                if (currentPage > totalPages) currentPage = totalPages;
+                renderConvertedPreview();
+                dtSummary.textContent = `Showing page ${currentPage} of ${totalPages} — ${filteredConvertedData.length} rows`;
+                // Enable/disable pager buttons
+                dtPrev.disabled = currentPage <= 1;
+                dtNext.disabled = currentPage >= totalPages;
+                dtPager.classList.remove('hidden');
+            } else {
+                renderConvertedPreview();
+                dtSummary.textContent = `${filteredConvertedData.length} rows`;
+                dtPager.classList.add('hidden'); // Tabulator shows its own pager
+            }
         }
 
         /**
@@ -324,46 +454,99 @@
          * Renders the converted data table.
          */
         function renderConvertedPreview() {
-            if (!currentConvertedData.length) {
+            if (!filteredConvertedData.length) {
                 convertedPreview.innerHTML = '';
-                convertedContainer.classList.add('hidden');
+                const empty = document.createElement('div');
+                empty.style.padding = '12px';
+                empty.textContent = 'No results — adjust search or filters.';
+                convertedPreview.appendChild(empty);
+                convertedContainer.classList.remove('hidden');
                 return;
             }
-            const table = document.createElement('table');
-            const thead = table.createTHead();
-            const headerRow = thead.insertRow();
-            
-            currentHeaders.forEach(key => {
-                const th = document.createElement('th');
-                th.textContent = key;
-                headerRow.appendChild(th);
-            });
-
-            const tbody = table.createTBody();
-            currentConvertedData.forEach(rowData => {
-                const row = tbody.insertRow();
-                currentHeaders.forEach(key => {
-                    const cell = row.insertCell();
-                    const value = rowData[key];
-                    cell.textContent = value !== null && typeof value !== 'undefined' ? value : '';
-                    const asStr = String(value ?? '');
-                    // mark numeric-looking cells for right alignment
-                    if (asStr !== '' && !isNaN(parseFloat(asStr)) && isFinite(Number(asStr))) {
-                        cell.setAttribute('data-type', 'number');
-                    }
-                });
-            });
-
-            convertedPreview.innerHTML = '';
-            convertedPreview.appendChild(table);
-            // Dynamically set sticky offset for the second column based on first column width
-            try {
-                const firstHeaderCell = table.tHead && table.tHead.rows[0] && table.tHead.rows[0].cells[0];
-                if (firstHeaderCell) {
-                    const w = firstHeaderCell.getBoundingClientRect().width;
-                    table.style.setProperty('--frozen-col-1', `${Math.ceil(w)}px`);
+            if (useTabulator()) {
+                // Render using Tabulator
+                convertedPreview.innerHTML = '';
+                const mount = document.createElement('div');
+                convertedPreview.appendChild(mount);
+                const numericFields = new Set([
+                    'Budget_Original','Budget_Revised','Committed_To_Date','Certified_To_Date','Forecast','Final_Forecast',
+                    'Variance_Sep2025_Value','Variance_Jun2025_Value','Additional_Claim'
+                ]);
+                const columns = currentHeaders.map(key => ({
+                    title: key.replace(/_/g, ' '),
+                    field: key,
+                    hozAlign: numericFields.has(key) ? 'right' : 'left',
+                    sorter: numericFields.has(key) ? 'number' : 'string',
+                }));
+                if (tabulatorTable) {
+                    tabulatorTable.setColumns(columns);
+                    tabulatorTable.setData(filteredConvertedData);
+                } else {
+                    tabulatorTable = new Tabulator(mount, {
+                        data: filteredConvertedData,
+                        columns,
+                        layout: 'fitDataStretch',
+                        pagination: true,
+                        paginationSize: rowsPerPage,
+                        movableColumns: true,
+                        resizableColumns: true,
+                    });
                 }
-            } catch (e) { /* noop */ }
+                // Apply search filter
+                if (searchQuery) {
+                    if (filterColumn) {
+                        tabulatorTable.setFilter(filterColumn, 'like', searchQuery);
+                    } else {
+                        tabulatorTable.setFilter((row) => {
+                            const d = row.getData();
+                            return currentHeaders.some(k => String(d[k] ?? '').toLowerCase().includes(searchQuery.toLowerCase()));
+                        });
+                    }
+                } else {
+                    tabulatorTable.clearFilter();
+                }
+            } else {
+                // Native table rendering (existing behavior)
+                const table = document.createElement('table');
+                const thead = table.createTHead();
+                const headerRow = thead.insertRow();
+                currentHeaders.forEach(key => {
+                    const th = document.createElement('th');
+                    th.textContent = key;
+                    headerRow.appendChild(th);
+                });
+                const tbody = table.createTBody();
+                const start = (currentPage - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                const pageRows = filteredConvertedData.slice(start, end);
+                pageRows.forEach(rowData => {
+                    const row = tbody.insertRow();
+                    currentHeaders.forEach(key => {
+                        const cell = row.insertCell();
+                        const value = rowData[key];
+                        if (typeof value === 'number') {
+                            const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
+                            cell.textContent = formatted;
+                            cell.setAttribute('data-type', 'number');
+                        } else {
+                            cell.textContent = value !== null && typeof value !== 'undefined' ? value : '';
+                        }
+                        const asStr = String(value ?? '');
+                        if (asStr !== '' && !isNaN(parseFloat(asStr)) && isFinite(Number(asStr))) {
+                            cell.setAttribute('data-type', 'number');
+                        }
+                    });
+                });
+                convertedPreview.innerHTML = '';
+                convertedPreview.appendChild(table);
+                try {
+                    const firstHeaderCell = table.tHead && table.tHead.rows[0] && table.tHead.rows[0].cells[0];
+                    if (firstHeaderCell) {
+                        const w = firstHeaderCell.getBoundingClientRect().width;
+                        table.style.setProperty('--frozen-col-1', `${Math.ceil(w)}px`);
+                    }
+                } catch (e) { /* noop */ }
+            }
             convertedContainer.classList.remove('hidden');
         }
 
@@ -420,8 +603,61 @@
             rawContainer.classList.add('hidden');
             convertedContainer.classList.add('hidden');
             exportBtn.disabled = true;
-            updateStatus('File selected. Click "Parse File" to process.', 'info');
+            updateStatus('File selected. Parsing…', 'info');
+            // Auto-parse on file selection
+            parseFile();
         });
+
+        // DataTable control events
+        dtSearch.addEventListener('input', (e) => { searchQuery = e.target.value; currentPage = 1; recalcAndRenderConverted(); });
+        dtFilterCol.addEventListener('change', (e) => { filterColumn = e.target.value; currentPage = 1; recalcAndRenderConverted(); });
+        dtPageSize.addEventListener('change', (e) => {
+            rowsPerPage = parseInt(e.target.value, 10) || 25;
+            currentPage = 1;
+            if (useTabulator() && tabulatorTable) { tabulatorTable.setPageSize(rowsPerPage); }
+            recalcAndRenderConverted();
+        });
+        dtPrev.addEventListener('click', () => { if (currentPage > 1) { currentPage -= 1; recalcAndRenderConverted(); } });
+        dtNext.addEventListener('click', () => {
+            const totalPages = Math.max(1, Math.ceil(filteredConvertedData.length / rowsPerPage));
+            if (currentPage < totalPages) { currentPage += 1; recalcAndRenderConverted(); }
+        });
+
+        // Export filtered subset
+        exportFilteredBtn.addEventListener('click', () => {
+            if (!filteredConvertedData.length) { updateStatus('No filtered data to export.', 'error'); return; }
+            const headerString = currentHeaders.join(',');
+            const rows = filteredConvertedData.map(row =>
+                currentHeaders.map(key => {
+                    const value = row[key];
+                    if (value === null || typeof value === 'undefined') return '';
+                    const strValue = String(value);
+                    if (strValue.includes(',')) return `"${strValue.replace(/"/g, '""')}"`;
+                    return strValue;
+                }).join(',')
+            );
+            const csvContent = [headerString, ...rows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', currentFileName.replace(/\.csv$/, '') + '_filtered.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            updateStatus('Filtered data exported.', 'success');
+        });
+
+        // Tabs behavior
+        function activateTab(which) {
+            const onRaw = which === 'raw';
+            tabs.raw.classList.toggle('active', onRaw);
+            tabs.converted.classList.toggle('active', !onRaw);
+            rawContainer.classList.toggle('hidden', !onRaw);
+            convertedContainer.classList.toggle('hidden', onRaw);
+        }
+        tabs.raw.addEventListener('click', () => activateTab('raw'));
+        tabs.converted.addEventListener('click', () => activateTab('converted'));
 
     </script>
 </body>
