@@ -1,8 +1,8 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `index.html` loads the parser UI, wires file inputs, and toggles the Raw/Converted views.
-- `js/parser.js` hosts the normalization pipeline; `js/datatable.js` keeps DOM rendering helpers isolated from parsing logic.
+- `index.html` provides the layout and styling tokens; interactivity now lives inside `js/app.js`.
+- `js/parser.js` hosts the normalization pipeline; `js/datatable.js` exports the lightweight table controller consumed by `js/app.js`.
 - `lib/` stores third-party bundles required offline (`xlsx.full.min.js` now; add Tabulator assets here when upgrading tables).
 - Sample workbooks (`test001.*`) sit at the project root for regression checks; keep new fixtures in `test/` using descriptive names.
 
