@@ -155,16 +155,6 @@
     dom.rawPreview.innerHTML = '';
     dom.rawPreview.appendChild(table);
 
-    try {
-      const firstRow = table.rows[0];
-      if (firstRow && firstRow.cells[0]) {
-        const width = firstRow.cells[0].getBoundingClientRect().width;
-        table.style.setProperty('--frozen-col-1', `${Math.ceil(width)}px`);
-      }
-    } catch (error) {
-      console.debug('Failed to size frozen column', error);
-    }
-
     showElement(dom.rawContainer);
   }
 

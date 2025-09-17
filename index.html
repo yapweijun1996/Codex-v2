@@ -168,23 +168,6 @@
         }
         .preview tbody tr:nth-child(even) td { background: var(--zebra); }
 
-        /* Freeze first and second columns for context */
-        .preview td:first-child, .preview th:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 1;
-            background: var(--sticky);
-            box-shadow: 1px 0 0 var(--border);
-            min-width: var(--frozen-col-1);
-        }
-        .preview td:nth-child(2), .preview th:nth-child(2) {
-            position: sticky;
-            left: var(--frozen-col-1);
-            z-index: 1;
-            background: var(--sticky);
-            box-shadow: 1px 0 0 var(--border);
-        }
-
         /* Right alignment for numeric cells when flagged */
         .preview td[data-type="number"] { text-align: right; }
         .num { text-align: right; }
