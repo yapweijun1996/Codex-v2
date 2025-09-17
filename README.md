@@ -1,33 +1,66 @@
 # Excel & CSV Parser
 
-This project provides a lightweight, powerful interface for parsing complex Excel and CSV files directly in the browser. It's designed to handle tricky real-world formats, including multi-line headers and messy data, turning them into clean, analysis-ready JSON.
+A lightweight, browser‑only tool for turning messy Excel/CSV sheets into clean, analysis‑ready data. Handles multi‑row headers and produces a stable converted schema suitable for charts and pivoting.
 
 ## Features
 
-- **Broad File Support**: Parses `.xls`, `.xlsx`, `.xlsm`, and `.csv` files.
-- **Intelligent CSV Parsing**: Specifically handles CSVs with leading metadata and multi-line, grouped headers.
-- **Metadata Extraction**: Automatically finds and extracts key-value metadata from the top of the sheet (e.g., Project Name, Project Code).
-- **Data Enrichment**: Injects the extracted metadata into every data row, so each record is self-contained.
-- **Advanced Data Normalization**: Cleans and types data, converting currency strings, percentages, and parenthesized negative numbers into proper numeric types.
-- **Side-by-Side Preview**: Displays the raw, unprocessed data next to the clean, converted data table for immediate verification.
-- **CSV Export**: Exports the clean, normalized data to a CSV file with a stable column order.
-- **Modern UI/UX**: A clean, responsive interface with clear user feedback, including loading states and interactive controls.
+- File support: `.xls`, `.xlsx`, `.xlsm`, `.csv` (SheetJS offline bundle).
+- Smart CSV parsing: detects parent/child headers; disambiguates duplicate labels (e.g., two "To Date").
+- Clean schema: normalized column names with consistent order (see "Converted Data Schema").
+- Auto‑parse on select: choosing a file starts parsing immediately.
+- Tabs UI: switch between `Raw` and `Converted` views.
+- Usability: sticky header + frozen first columns, horizontal scroll with shadows, mobile responsive.
+- Converted table controls: global search, optional column scope, rows/page, pagination, export filtered/all.
+- Numeric formatting: thousands separator; right‑aligned numbers.
 
 ## Getting Started
 
-1.  Open `index.html` in a modern browser.
-2.  Click the file selection area to choose a spreadsheet or drag and drop a file onto it.
-3.  The parser will automatically attempt to find the header and process the data.
-4.  Review the "Raw Data" and "Converted Data" tables to ensure the conversion is correct.
-5.  Use the "Export CSV" button to download the clean data.
+1. Open `index.html` in a modern browser (no server required).
+2. Click the file area or drop a file. Parsing starts automatically.
+3. Use the tabs to switch between `Raw` and `Converted`.
+4. In `Converted`, use search, choose a column (optional), and set rows per page. Click `Export CSV` (all rows) or `Export Filtered` (current filter only).
 
-## Advanced Usage
+Tips
+- If header detection is off, set the exact header line in `Header Row (1‑based)`.
+- If characters look garbled, change `CSV Encoding` to `Windows‑1252` and re‑parse.
 
-For files where the automatic parsing might fail, you can use the manual override controls:
+## Converted Data Schema
 
--   **Header Row (1-based)**: If the parser can't find the correct header, you can manually enter the row number where the main header line is located (e.g., for `test001.csv`, this would be row 4). The parser will use the row above it as the parent/group header.
--   **CSV Encoding**: If you are parsing a CSV file and see garbled text (e.g., `�`), the file might not be in UTF-8. Try selecting `Windows-1252` (a common encoding for older Excel-generated files) and parse again.
+The Converted table outputs these columns in this exact order:
+
+1. `Project`
+2. `Item_Code`
+3. `Item_Description`
+4. `Budget_Original`
+5. `Budget_Revised`
+6. `Committed_To_Date`
+7. `Certified_To_Date`
+8. `Forecast`
+9. `Final_Forecast`
+10. `Variance_Sep2025_Value`
+11. `Variance_Sep2025_Remarks`
+12. `Variance_Jun2025_Value`
+13. `Variance_Jun2025_Remarks`
+14. `Additional_Claim`
+
+Note: Variance month detection currently targets Sep‑2025 and Jun‑2025 from the sample file. This can be generalized to arbitrary months if required.
+
+## Developer API (js/parser.js)
+
+- `parseCsvData(csvString, manualHeaderRow?)`
+  - Returns `{ headers, data, raw }` where `headers` are the Converted headers above, `data` are normalized rows, and `raw` is the pre‑header array‑of‑arrays for the Raw preview.
+- `toLongFormat(records, measures?)`
+  - Converts the wide `data` into tidy rows: `{ project, item_code, item_description, metric, value }` for easy aggregations.
+
+## Optional: Rich Data Grid
+
+This app includes a graceful fallback to a native table and can auto‑upgrade to [Tabulator](https://tabulator.info/) if its files are present locally.
+
+1. Add to the repo:
+   - `lib/tabulator.min.js`
+   - `lib/tabulator.min.css`
+2. Reload `index.html` — the Converted table will render with Tabulator, enabling built‑in pagination, sorting, column moving/resizing. If the files are missing, the native table remains active.
 
 ## Offline Deployment
 
-The app depends on the SheetJS `xlsx.full.min.js` bundle. For offline usage, the library is included locally at `lib/xlsx.full.min.js`. When deploying without Internet access, ensure this file is distributed alongside the site.
+All parsing runs in the browser using the local SheetJS bundle: `lib/xlsx.full.min.js`. Keep this file (and optionally Tabulator assets) alongside `index.html` for offline use.

@@ -270,6 +270,22 @@ function extractMetadata(rows, headerIndex) {
 }
 
 /**
+ * Checks if a row is a valid data row based on its Item_Code.
+ * Skips group headers like "1", "2", "3.1", etc.
+ * @param {object} rowData - The parsed row object.
+ * @returns {boolean}
+ */
+function isDataRow(rowData) {
+    const code = rowData['Item_Code'] ?? rowData['item_code'];
+    if (code === null || typeof code === 'undefined') return false;
+    const codeStr = String(code).trim();
+    // Valid codes are typically floats (e.g., 1.01) or multi-part decimals (e.g., 1.1.1)
+    // Invalid codes are integers (e.g., 1) or simple decimals (e.g., 1.1)
+    return (typeof code === 'number' && !Number.isInteger(code)) ||
+           (typeof code === 'string' && codeStr.includes('.') && codeStr.split('.').length > 1 && !/^\d+(\.0+)?$/.test(codeStr));
+}
+
+/**
  * Parses raw CSV string data into structured JSON.
  * @param {string} csvData - The raw CSV data as a string.
  * @param {number | null} manualHeaderRow - An optional 1-based index for the header row.
@@ -306,12 +322,9 @@ function parseCsvData(csvData, manualHeaderRow = null) {
         });
 
         // Keep item detail rows; skip group headers like 1, 2, 3...
-        const code = rowData['Item_Code'] ?? rowData['item_code'];
-        const isDataRow = (
-            (typeof code === 'number' && !Number.isInteger(code)) ||
-            (typeof code === 'string' && /^(\d+\.)+\d+$/.test(code.trim()))
-        );
-        if (isDataRow) jsonData.push(rowData);
+        if (isDataRow(rowData)) {
+            jsonData.push(rowData);
+        }
     });
 
     // Add project metadata to each row using robust scan

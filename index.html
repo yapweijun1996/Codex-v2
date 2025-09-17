@@ -203,6 +203,8 @@
             .preview { max-height: 50vh; }
         }
     </style>
+    <!-- Add jQuery and DataTables CSS from CDN -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 </head>
 <body>
     <div class="container">
@@ -281,6 +283,9 @@
 
     <script src="lib/xlsx.full.min.js"></script>
     <script src="js/parser.js"></script>
+    <!-- Add jQuery and DataTables JS from CDN -->
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script>
         // --- DOM Elements ---
         const fileInput = document.getElementById('fileInput');
@@ -308,11 +313,8 @@
         const dtSummary = document.getElementById('dt-summary');
         const exportFilteredBtn = document.getElementById('exportFilteredBtn');
 
-        // Optional: Tabulator integration (if lib/tabulator.min.js is present)
-        let tabulatorTable = null;
-        const useTabulator = () => typeof window.Tabulator !== 'undefined';
-
         // --- Global State ---
+        let dataTable = null; // To hold the DataTable instance
         let currentRawData = [];
         let currentHeaders = [];
         let currentConvertedData = [];
@@ -325,6 +327,22 @@
         let filterColumn = '';
 
         // --- Core Application Logic ---
+
+        /**
+         * Checks if a row is a valid data row based on its Item_Code.
+         * Skips group headers like "1", "2", "3.1", etc.
+         * @param {object} rowData - The parsed row object.
+         * @returns {boolean}
+         */
+        function isDataRow(rowData) {
+            const code = rowData['Item_Code'] ?? rowData['item_code'];
+            if (code === null || typeof code === 'undefined') return false;
+            const codeStr = String(code).trim();
+            // Valid codes are typically floats (e.g., 1.01) or multi-part decimals (e.g., 1.1.1)
+            // Invalid codes are integers (e.g., 1) or simple decimals (e.g., 1.1)
+            return (typeof code === 'number' && !Number.isInteger(code)) ||
+                   (typeof code === 'string' && codeStr.includes('.') && codeStr.split('.').length > 1 && !/^\d+(\.0+)?$/.test(codeStr));
+        }
 
         /**
          * Main parsing function to process the uploaded file.
@@ -388,36 +406,9 @@
 
         // Recompute filtered data and render current page
         function recalcAndRenderConverted() {
-            // Filter (native mode; Tabulator uses its own filter)
-            const q = (searchQuery || '').toLowerCase();
-            const col = filterColumn;
-            filteredConvertedData = currentConvertedData.filter(row => {
-                if (!q) return true;
-                if (col) {
-                    const v = row[col];
-                    return v !== null && typeof v !== 'undefined' && String(v).toLowerCase().includes(q);
-                }
-                // search across all columns
-                return currentHeaders.some(k => {
-                    const v = row[k];
-                    return v !== null && typeof v !== 'undefined' && String(v).toLowerCase().includes(q);
-                });
-            });
-            // Clamp current page
-            if (!useTabulator()) {
-                const totalPages = Math.max(1, Math.ceil(filteredConvertedData.length / rowsPerPage));
-                if (currentPage > totalPages) currentPage = totalPages;
-                renderConvertedPreview();
-                dtSummary.textContent = `Showing page ${currentPage} of ${totalPages} — ${filteredConvertedData.length} rows`;
-                // Enable/disable pager buttons
-                dtPrev.disabled = currentPage <= 1;
-                dtNext.disabled = currentPage >= totalPages;
-                dtPager.classList.remove('hidden');
-            } else {
-                renderConvertedPreview();
-                dtSummary.textContent = `${filteredConvertedData.length} rows`;
-                dtPager.classList.add('hidden'); // Tabulator shows its own pager
-            }
+            // With DataTables, we don't need manual filtering or pagination logic here.
+            // We just need to re-render the table when the source data changes.
+            renderConvertedPreview();
         }
 
         /**
@@ -451,102 +442,57 @@
         }
 
         /**
-         * Renders the converted data table.
+         * Renders the converted data table using DataTables.js.
          */
         function renderConvertedPreview() {
-            if (!filteredConvertedData.length) {
-                convertedPreview.innerHTML = '';
+            const validData = currentConvertedData.filter(isDataRow);
+
+            // Destroy existing DataTable if it exists
+            if (dataTable) {
+                dataTable.destroy();
+                dataTable = null;
+            }
+            convertedPreview.innerHTML = ''; // Clear previous content
+
+            if (!validData.length) {
                 const empty = document.createElement('div');
                 empty.style.padding = '12px';
-                empty.textContent = 'No results — adjust search or filters.';
+                empty.textContent = 'No data to display.';
                 convertedPreview.appendChild(empty);
                 convertedContainer.classList.remove('hidden');
+                dtControls.classList.add('hidden');
+                dtPager.classList.add('hidden');
                 return;
             }
-            if (useTabulator()) {
-                // Render using Tabulator
-                convertedPreview.innerHTML = '';
-                const mount = document.createElement('div');
-                convertedPreview.appendChild(mount);
-                const numericFields = new Set([
-                    'Budget_Original','Budget_Revised','Committed_To_Date','Certified_To_Date','Forecast','Final_Forecast',
-                    'Variance_Sep2025_Value','Variance_Jun2025_Value','Additional_Claim'
-                ]);
-                const columns = currentHeaders.map(key => ({
-                    title: key.replace(/_/g, ' '),
-                    field: key,
-                    hozAlign: numericFields.has(key) ? 'right' : 'left',
-                    sorter: numericFields.has(key) ? 'number' : 'string',
-                }));
-                if (tabulatorTable) {
-                    tabulatorTable.setColumns(columns);
-                    tabulatorTable.setData(filteredConvertedData);
-                } else {
-                    tabulatorTable = new Tabulator(mount, {
-                        data: filteredConvertedData,
-                        columns,
-                        layout: 'fitDataStretch',
-                        pagination: true,
-                        paginationSize: rowsPerPage,
-                        movableColumns: true,
-                        resizableColumns: true,
-                    });
-                }
-                // Apply search filter
-                if (searchQuery) {
-                    if (filterColumn) {
-                        tabulatorTable.setFilter(filterColumn, 'like', searchQuery);
-                    } else {
-                        tabulatorTable.setFilter((row) => {
-                            const d = row.getData();
-                            return currentHeaders.some(k => String(d[k] ?? '').toLowerCase().includes(searchQuery.toLowerCase()));
-                        });
-                    }
-                } else {
-                    tabulatorTable.clearFilter();
-                }
-            } else {
-                // Native table rendering (existing behavior)
-                const table = document.createElement('table');
-                const thead = table.createTHead();
-                const headerRow = thead.insertRow();
-                currentHeaders.forEach(key => {
-                    const th = document.createElement('th');
-                    th.textContent = key;
-                    headerRow.appendChild(th);
-                });
-                const tbody = table.createTBody();
-                const start = (currentPage - 1) * rowsPerPage;
-                const end = start + rowsPerPage;
-                const pageRows = filteredConvertedData.slice(start, end);
-                pageRows.forEach(rowData => {
-                    const row = tbody.insertRow();
-                    currentHeaders.forEach(key => {
-                        const cell = row.insertCell();
-                        const value = rowData[key];
-                        if (typeof value === 'number') {
-                            const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
-                            cell.textContent = formatted;
-                            cell.setAttribute('data-type', 'number');
-                        } else {
-                            cell.textContent = value !== null && typeof value !== 'undefined' ? value : '';
-                        }
-                        const asStr = String(value ?? '');
-                        if (asStr !== '' && !isNaN(parseFloat(asStr)) && isFinite(Number(asStr))) {
-                            cell.setAttribute('data-type', 'number');
-                        }
-                    });
-                });
-                convertedPreview.innerHTML = '';
-                convertedPreview.appendChild(table);
-                try {
-                    const firstHeaderCell = table.tHead && table.tHead.rows[0] && table.tHead.rows[0].cells[0];
-                    if (firstHeaderCell) {
-                        const w = firstHeaderCell.getBoundingClientRect().width;
-                        table.style.setProperty('--frozen-col-1', `${Math.ceil(w)}px`);
-                    }
-                } catch (e) { /* noop */ }
-            }
+
+            // Create the table structure required by DataTables
+            const table = document.createElement('table');
+            table.id = 'convertedTable';
+            table.className = 'display'; // Basic styling for DataTables
+            table.style.width = '100%';
+            convertedPreview.appendChild(table);
+
+            // Prepare data for DataTables
+            const dataForTable = validData.map(row => currentHeaders.map(key => row[key]));
+            const columnsForTable = currentHeaders.map(key => ({ title: key.replace(/_/g, ' ') }));
+
+            // Initialize DataTables
+            dataTable = new $('#convertedTable').DataTable({
+                data: dataForTable,
+                columns: columnsForTable,
+                pageLength: parseInt(dtPageSize.value, 10) || 25,
+                searching: true,
+                // Hide the default controls so we can use our custom ones
+                dom: 'rt<"bottom"ip><"clear">',
+            });
+
+            // Show our custom controls
+            dtControls.classList.remove('hidden');
+            dtPager.classList.remove('hidden'); // Pager is handled by DT, but we show our container
+            dtSummary.classList.add('hidden'); // Hide our summary, DT has its own
+            dtPrev.classList.add('hidden'); // Hide our buttons, DT has its own
+            dtNext.classList.add('hidden'); // Hide our buttons, DT has its own
+
             convertedContainer.classList.remove('hidden');
         }
 
@@ -609,19 +555,37 @@
         });
 
         // DataTable control events
-        dtSearch.addEventListener('input', (e) => { searchQuery = e.target.value; currentPage = 1; recalcAndRenderConverted(); });
-        dtFilterCol.addEventListener('change', (e) => { filterColumn = e.target.value; currentPage = 1; recalcAndRenderConverted(); });
+        dtSearch.addEventListener('input', (e) => {
+            if (dataTable) {
+                const colIndex = dtFilterCol.selectedIndex;
+                if (colIndex > 0) {
+                    // Search in a specific column (index 0 is "All columns")
+                    dataTable.column(colIndex - 1).search(e.target.value).draw();
+                } else {
+                    // Global search
+                    dataTable.search(e.target.value).draw();
+                }
+            }
+        });
+        dtFilterCol.addEventListener('change', (e) => {
+            // Re-apply the search to the new column selection
+            if (dataTable) {
+                const colIndex = e.target.selectedIndex;
+                // Clear all column searches first
+                dataTable.columns().search('').draw();
+                if (colIndex > 0) {
+                    dataTable.column(colIndex - 1).search(dtSearch.value).draw();
+                } else {
+                    dataTable.search(dtSearch.value).draw();
+                }
+            }
+        });
         dtPageSize.addEventListener('change', (e) => {
-            rowsPerPage = parseInt(e.target.value, 10) || 25;
-            currentPage = 1;
-            if (useTabulator() && tabulatorTable) { tabulatorTable.setPageSize(rowsPerPage); }
-            recalcAndRenderConverted();
+            if (dataTable) {
+                dataTable.page.len(parseInt(e.target.value, 10) || 25).draw();
+            }
         });
-        dtPrev.addEventListener('click', () => { if (currentPage > 1) { currentPage -= 1; recalcAndRenderConverted(); } });
-        dtNext.addEventListener('click', () => {
-            const totalPages = Math.max(1, Math.ceil(filteredConvertedData.length / rowsPerPage));
-            if (currentPage < totalPages) { currentPage += 1; recalcAndRenderConverted(); }
-        });
+        // dtPrev and dtNext are now handled by DataTables' own pagination controls
 
         // Export filtered subset
         exportFilteredBtn.addEventListener('click', () => {
