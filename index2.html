@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSV Text Converter</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --border: #d1d5db;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .shell {
+      max-width: 1000px;
+      width: 100%;
+      background: var(--panel);
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    h1 {
+      margin: 0;
+      text-align: center;
+      font-size: 1.8rem;
+    }
+    .fields {
+      display: grid;
+      gap: 24px;
+    }
+    @media (min-width: 960px) {
+      .fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 8px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 320px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 12px;
+      resize: vertical;
+      font-family: "SFMono-Regular", ui-monospace, "Roboto Mono", Menlo, monospace;
+      font-size: 0.95rem;
+      background: #f9fafb;
+    }
+    textarea:focus {
+      outline: 2px solid var(--primary);
+      background: #fff;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    input[type="number"] {
+      width: 160px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 1rem;
+    }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease;
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    .status {
+      min-height: 24px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .status.success { color: #166534; }
+    .status.error { color: #b91c1c; }
+    .status.info { color: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h1>CSV Text Converter</h1>
+    <p class="status info" id="status">Paste CSV text into the left panel to get started.</p>
+    <div class="controls">
+      <div class="control-group">
+        <label for="headerRow">Header Row (optional, 1-based)</label>
+        <input type="number" id="headerRow" min="1" placeholder="Auto-detect" />
+      </div>
+      <div class="control-group" style="flex-direction: row; gap: 12px;">
+        <button id="convertBtn" class="btn-primary">Convert</button>
+        <button id="downloadBtn" class="btn-secondary" disabled>Download CSV</button>
+      </div>
+    </div>
+    <div class="fields">
+      <div>
+        <label for="inputCsv">Input CSV (paste raw text)</label>
+        <textarea id="inputCsv" placeholder="Project,Item_Code,Item_Description,...."></textarea>
+      </div>
+      <div>
+        <label for="outputCsv">Converted CSV (read-only)</label>
+        <textarea id="outputCsv" readonly placeholder="Converted schema will appear here..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <script src="lib/xlsx.full.min.js"></script>
+  <script src="js/parser.js"></script>
+  <script>
+    (function initCsvTextConverter(window, document) {
+      'use strict';
+
+      const csvParser = window.csvParser;
+      if (!csvParser) {
+        console.error('csvParser module is required but missing.');
+        return;
+      }
+
+      const dom = {
+        input: document.getElementById('inputCsv'),
+        output: document.getElementById('outputCsv'),
+        convertBtn: document.getElementById('convertBtn'),
+        downloadBtn: document.getElementById('downloadBtn'),
+        headerRow: document.getElementById('headerRow'),
+        status: document.getElementById('status')
+      };
+
+      let lastCsvText = '';
+
+      function updateStatus(message, type) {
+        dom.status.textContent = message;
+        dom.status.className = `status ${type}`;
+      }
+
+      function formatCsvCell(value) {
+        if (value === null || typeof value === 'undefined') return '';
+        const text = String(value);
+        return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
+      }
+
+      function buildCsv(headers, rows) {
+        const lines = [headers.join(',')];
+        rows.forEach((row) => {
+          const line = headers.map((header) => formatCsvCell(row[header]));
+          lines.push(line.join(','));
+        });
+        return lines.join('\n');
+      }
+
+      function handleConvert() {
+        const rawCsv = dom.input.value.trim();
+        if (!rawCsv) {
+          updateStatus('Please paste CSV text before converting.', 'error');
+          dom.output.value = '';
+          dom.downloadBtn.disabled = true;
+          return;
+        }
+
+        const headerOverride = dom.headerRow.value ? parseInt(dom.headerRow.value, 10) : null;
+        if (headerOverride !== null && (Number.isNaN(headerOverride) || headerOverride <= 0)) {
+          updateStatus('Header Row must be a positive number.', 'error');
+          return;
+        }
+
+        try {
+          const { headers, data } = csvParser.parse(rawCsv, headerOverride);
+          if (!headers.length || !data.length) {
+            updateStatus('Conversion succeeded but produced no rows. Verify the input.', 'info');
+            dom.output.value = headers.join(',');
+            dom.downloadBtn.disabled = false;
+            lastCsvText = dom.output.value;
+            return;
+          }
+
+          const csvText = buildCsv(headers, data);
+          dom.output.value = csvText;
+          dom.downloadBtn.disabled = false;
+          lastCsvText = csvText;
+          updateStatus(`Converted ${data.length} rows across ${headers.length} columns.`, 'success');
+        } catch (error) {
+          console.error('Conversion failed', error);
+          dom.output.value = '';
+          dom.downloadBtn.disabled = true;
+          updateStatus(`Conversion error: ${error.message}`, 'error');
+        }
+      }
+
+      function handleDownload() {
+        if (!lastCsvText) return;
+        const blob = new Blob([lastCsvText], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'converted.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        updateStatus('Converted CSV downloaded.', 'success');
+      }
+
+      dom.convertBtn.addEventListener('click', handleConvert);
+      dom.downloadBtn.addEventListener('click', handleDownload);
+    })(window, document);
+  </script>
+</body>
+</html>
