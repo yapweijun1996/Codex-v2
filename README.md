@@ -26,7 +26,7 @@ Tips
 
 ## Converted Data Schema
 
-The Converted table outputs these columns in this exact order:
+The Converted table outputs columns in a stable order:
 
 1. `Project`
 2. `Item_Code`
@@ -37,13 +37,11 @@ The Converted table outputs these columns in this exact order:
 7. `Certified_To_Date`
 8. `Forecast`
 9. `Final_Forecast`
-10. `Variance_Sep2025_Value`
-11. `Variance_Sep2025_Remarks`
-12. `Variance_Jun2025_Value`
-13. `Variance_Jun2025_Remarks`
-14. `Additional_Claim`
-
-Note: Variance month detection currently targets Sep‑2025 and Jun‑2025 from the sample file. This can be generalized to arbitrary months if required.
+10+. One or more variance month pairs detected from the header, for example:
+    - `Variance_Sep2025_Value`, `Variance_Sep2025_Remarks`
+    - `Variance_Jun2025_Value`, `Variance_Jun2025_Remarks`
+    The month pairs are derived dynamically from the CSV header (e.g., `Sep-25`, `Jun-25`).
+Last. `Additional_Claim`
 
 ## Developer API (js/parser.js)
 

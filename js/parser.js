@@ -136,12 +136,27 @@ function normalizeHeaderToken(token) {
     if (h === 'variance' || h === 'variance forecast' || h === 'forecast variance') return 'variance_forecast';
     if (h.includes('claim')) return 'additional_claim';
     if (h.includes('remark')) return 'remarks';
-    if (/(sep\-?25|september\s*2025|sep\s*2025)/.test(h)) return 'sep2025';
-    if (/(jun\-?25|june\s*2025|jun\s*2025)/.test(h)) return 'jun2025';
 
     // Fallback generic
     if (!h) return '';
     return h.replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+}
+
+// Parse a month token like "Sep-25", "Sep 2025", "September 2025" into a stable id "Sep2025"
+function parseMonthToken(text) {
+    const s = String(text || '').trim();
+    const m = s.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)(?:[\s\-_/]+)?(\d{2,4})\b/i);
+    if (!m) return null;
+    let mon = m[1].toLowerCase();
+    // normalize Sept -> Sep
+    if (mon === 'sept') mon = 'sep';
+    const monCap = mon.charAt(0).toUpperCase() + mon.slice(1,3);
+    let yy = m[2];
+    if (yy.length === 2) {
+        // assume 20xx for two-digit years
+        yy = '20' + yy;
+    }
+    return monCap + yy; // e.g., Sep2025
 }
 
 /**
@@ -153,7 +168,7 @@ function normalizeHeaderToken(token) {
 function deriveHeaderKeys(mainHeader, parentHeader = []) {
     const keys = [];
     let toDateSeen = 0;
-    let lastVarianceMonth = null; // 'sep2025' | 'jun2025'
+    let lastVarianceMonth = null; // e.g., 'Sep2025'
 
     // We detect budget columns to help ordering of "to date" fields.
     // We'll simply count original/revised occurrences we pass; not strictly required.
@@ -174,36 +189,35 @@ function deriveHeaderKeys(mainHeader, parentHeader = []) {
             if (parent.includes('final')) keys.push('Final_Forecast');
             else if (parent.includes('variance')) keys.push('Variance_Forecast');
             else keys.push('Forecast');
-        } else if (k === 'sep2025' || k === 'jun2025') {
-            // Variance months have two sub-columns: value then remarks
-            if (parent.includes('variance')) {
-                if (k === 'sep2025') { keys.push('Variance_Sep2025_Value'); lastVarianceMonth = 'sep2025'; }
-                else { keys.push('Variance_Jun2025_Value'); lastVarianceMonth = 'jun2025'; }
+        } else if (parent.includes('variance')) {
+            // Variance group special handling: month tokens followed by Remarks
+            const monthId = parseMonthToken(cell);
+            if (monthId) {
+                keys.push(`Variance_${monthId}_Value`);
+                lastVarianceMonth = monthId;
+            } else if (k === 'remarks') {
+                if (lastVarianceMonth) keys.push(`Variance_${lastVarianceMonth}_Remarks`);
+                else keys.push('Variance_Remarks');
+            } else if (k) {
+                keys.push(k);
             } else {
-                // If such month appears outside Variance, just push a normalized label
-                keys.push(k === 'sep2025' ? 'Sep2025' : 'Jun2025');
+                keys.push('');
             }
         } else if (k) {
             // Direct mapped or generic key
             // If parent says Variance and child is Remarks, qualify it
-            if (k === 'remarks' && parent.includes('variance')) {
-                if (lastVarianceMonth === 'sep2025') keys.push('Variance_Sep2025_Remarks');
-                else if (lastVarianceMonth === 'jun2025') keys.push('Variance_Jun2025_Remarks');
-                else keys.push('Variance_Remarks');
-            } else {
-                // map common fields to final display keys
-                if (k === 'item_code') keys.push('Item_Code');
-                else if (k === 'item_description') keys.push('Item_Description');
-                else if (k === 'budget_original') keys.push('Budget_Original');
-                else if (k === 'budget_revised') keys.push('Budget_Revised');
-                else if (k === 'committed_to_date') keys.push('Committed_To_Date');
-                else if (k === 'certified_to_date') keys.push('Certified_To_Date');
-                else if (k === 'forecast') keys.push('Forecast');
-                else if (k === 'variance_forecast') keys.push('Variance_Forecast');
-                else if (k === 'final_forecast') keys.push('Final_Forecast');
-                else if (k === 'additional_claim') keys.push('Additional_Claim');
-                else keys.push('');
-            }
+            // map common fields to final display keys
+            if (k === 'item_code') keys.push('Item_Code');
+            else if (k === 'item_description') keys.push('Item_Description');
+            else if (k === 'budget_original') keys.push('Budget_Original');
+            else if (k === 'budget_revised') keys.push('Budget_Revised');
+            else if (k === 'committed_to_date') keys.push('Committed_To_Date');
+            else if (k === 'certified_to_date') keys.push('Certified_To_Date');
+            else if (k === 'forecast') keys.push('Forecast');
+            else if (k === 'variance_forecast') keys.push('Variance_Forecast');
+            else if (k === 'final_forecast') keys.push('Final_Forecast');
+            else if (k === 'additional_claim') keys.push('Additional_Claim');
+            else keys.push('');
         } else {
             keys.push('');
         }
@@ -216,11 +230,6 @@ function deriveHeaderKeys(mainHeader, parentHeader = []) {
         if (!seen.has(k)) {
             seen.add(k);
             return k;
-        }
-        // Allow duplicate variance remarks to map to Jun after Sep
-        if (k === 'Variance_Sep2025_Remarks' && !seen.has('Variance_Jun2025_Remarks')) {
-            seen.add('Variance_Jun2025_Remarks');
-            return 'Variance_Jun2025_Remarks';
         }
         // For unexpected dups, keep the original raw token with suffix to avoid collisions
         let idx = 2;
@@ -318,8 +327,19 @@ function parseCsvData(csvData, manualHeaderRow = null) {
         const rowData = {};
         headerKeys.forEach((key, i) => {
             if (!key) return;
-            rowData[key] = normalizeCellValue(row[i]);
+            const cell = row[i];
+            if (key.toLowerCase() === 'item_code') {
+                // Preserve item code as string to avoid losing structure (e.g., 1.01)
+                rowData[key] = (cell === null || typeof cell === 'undefined') ? null : String(cell).trim();
+            } else {
+                rowData[key] = normalizeCellValue(cell);
+            }
         });
+        // Fallback: if Item_Code missing, try to detect from any cell that looks like 1.01/2.12 etc.
+        if (!rowData['Item_Code']) {
+            const guess = row.find(c => c !== null && /^(\d+\.)+\d+$/.test(String(c).trim()));
+            if (guess != null) rowData['Item_Code'] = String(guess).trim();
+        }
 
         // Keep item detail rows; skip group headers like 1, 2, 3...
         if (isDataRow(rowData)) {
@@ -330,40 +350,28 @@ function parseCsvData(csvData, manualHeaderRow = null) {
     // Add project metadata to each row using robust scan
     const meta = extractMetadata(arrays, headerIndex);
     const project = meta.project;
-    const projectCode = meta.project_code;
-    const month = meta.month;
 
-    const enrichedData = jsonData.map(row => ({
-        Project: project,
-        ...row
-    }));
+    const enrichedData = jsonData.map(row => ({ Project: project, ...row }));
 
-    // Enforce expected column order and limit
-    const desiredOrder = [
-        'Project',
-        'Item_Code',
-        'Item_Description',
-        'Budget_Original',
-        'Budget_Revised',
-        'Committed_To_Date',
-        'Certified_To_Date',
-        'Forecast',
-        'Final_Forecast',
-        'Variance_Sep2025_Value',
-        'Variance_Sep2025_Remarks',
-        'Variance_Jun2025_Value',
-        'Variance_Jun2025_Remarks',
-        'Additional_Claim'
-    ];
+    // Build dynamic header order (base fields first, then discovered variance pairs, then Additional_Claim)
+    const baseOrder = ['Item_Code','Item_Description','Budget_Original','Budget_Revised','Committed_To_Date','Certified_To_Date','Forecast','Final_Forecast'];
+    const headerSet = new Set(headerKeys.filter(Boolean));
+    const varianceKeys = headerKeys.filter(k => /^Variance_[A-Za-z]{3}\d{4}_/.test(k));
+    const dynamicOrder = [];
+    baseOrder.forEach(k => { if (k === 'Item_Code' || headerSet.has(k)) dynamicOrder.push(k); });
+    varianceKeys.forEach(k => { if (!dynamicOrder.includes(k)) dynamicOrder.push(k); });
+    if (headerSet.has('Additional_Claim')) dynamicOrder.push('Additional_Claim');
 
-    // Project rows onto desired shape
+    const finalHeaders = ['Project', ...dynamicOrder];
+
+    // Project rows onto final shape
     const projectedData = enrichedData.map(row => {
-        const out = {};
-        for (const k of desiredOrder) out[k] = k in row ? row[k] : null;
+        const out = { Project: row.Project };
+        for (const k of dynamicOrder) out[k] = k in row ? row[k] : null;
         return out;
     });
 
-    return { headers: desiredOrder, data: projectedData, raw: arrays };
+    return { headers: finalHeaders, data: projectedData, raw: arrays };
 }
 
 /**
@@ -377,12 +385,10 @@ function parseCsvData(csvData, manualHeaderRow = null) {
 function toLongFormat(records, measures) {
     if (!Array.isArray(records) || records.length === 0) return [];
     const sample = records[0];
+    const varianceCols = Object.keys(sample).filter(k => /^Variance_[A-Za-z]{3}\d{4}_(Value|Remarks)$/.test(k));
     const defaultMeasures = [
-        'Budget_Original', 'Budget_Revised',
-        'Committed_To_Date', 'Certified_To_Date',
-        'Forecast', 'Final_Forecast',
-        'Variance_Sep2025_Value', 'Variance_Sep2025_Remarks',
-        'Variance_Jun2025_Value', 'Variance_Jun2025_Remarks',
+        'Budget_Original','Budget_Revised','Committed_To_Date','Certified_To_Date','Forecast','Final_Forecast',
+        ...varianceCols,
         'Additional_Claim'
     ].filter(k => k in sample);
     const metrics = Array.isArray(measures) && measures.length ? measures : defaultMeasures;
