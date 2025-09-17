@@ -82,6 +82,10 @@
       flex-direction: column;
       gap: 6px;
     }
+    .control-buttons {
+      flex-direction: row;
+      gap: 12px;
+    }
     input[type="number"] {
       width: 160px;
       border: 1px solid var(--border);
@@ -97,6 +101,7 @@
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s ease, transform 0.15s ease;
+      touch-action: manipulation;
     }
     button:disabled {
       opacity: 0.55;
@@ -118,10 +123,54 @@
       min-height: 24px;
       font-size: 0.95rem;
       color: var(--muted);
+      word-break: break-word;
     }
     .status.success { color: #166534; }
     .status.error { color: #b91c1c; }
     .status.info { color: #1d4ed8; }
+
+    @media (max-width: 900px) {
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .control-group,
+      .control-buttons {
+        width: 100%;
+      }
+      .control-buttons {
+        flex-direction: column;
+      }
+      input[type="number"],
+      button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 640px) {
+      textarea {
+        min-height: 260px;
+      }
+      .fields {
+        gap: 16px;
+      }
+      h1 {
+        font-size: 1.55rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .shell {
+        padding: 1.25rem;
+        border-radius: 10px;
+      }
+      button {
+        min-height: 44px;
+      }
+      .status {
+        font-size: 0.9rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -133,7 +182,7 @@
         <label for="headerRow">Header Row (optional, 1-based)</label>
         <input type="number" id="headerRow" min="1" placeholder="Auto-detect" />
       </div>
-      <div class="control-group" style="flex-direction: row; gap: 12px;">
+      <div class="control-group control-buttons">
         <button id="convertBtn" class="btn-primary">Convert</button>
         <button id="downloadBtn" class="btn-secondary" disabled>Download CSV</button>
       </div>

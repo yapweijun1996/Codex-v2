@@ -17,7 +17,6 @@
             --accent: #edf2f7;
             --zebra: #fafafa;
             --sticky: #ffffff;
-            --frozen-col-1: 160px; /* default; can be overridden per table */
         }
 
         body {
@@ -49,9 +48,117 @@
         }
         .tab.active { background: var(--panel); border-color: var(--primary); color: var(--primary); }
         /* Panels */
-        .panel { width: 100%; }
-        .panel-head { display:flex; justify-content: space-between; align-items: center; margin-bottom:.25rem; }
+        .panel {
+            width: 100%;
+            background: #fff;
+            border: 1px solid rgba(37, 99, 235, 0.08);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            box-sizing: border-box;
+            transition: box-shadow 0.2s ease;
+        }
+        .panel:not(.hidden):hover {
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        }
+        .panel-head {
+            display:flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: .75rem;
+            gap: .75rem;
+        }
+        .panel-head h2 {
+            margin: 0;
+            font-size: 1.35rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
         .panel-actions button { margin-left:.5rem; }
+        .panel-actions button:first-child { margin-left: 0; }
+
+        /* Converted panel refinements */
+        #converted-container .panel-head {
+            flex-wrap: wrap;
+        }
+        #converted-container .panel-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        #converted-container .panel-actions button {
+            background-color: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 0.65rem 1.1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            min-width: 150px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        #converted-container .panel-actions button:hover:not(:disabled) {
+            background-color: var(--primary-600);
+            transform: translateY(-1px);
+        }
+        #converted-container .panel-actions button:disabled {
+            background-color: rgba(44, 82, 130, 0.2);
+        }
+        #converted-container .options {
+            align-items: flex-start;
+            background: rgba(44, 82, 130, 0.06);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+        }
+        #converted-container .options label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--muted);
+        }
+        #converted-container .options input,
+        #converted-container .options select {
+            background: #fff;
+        }
+        #converted-container .options .input-group {
+            position: relative;
+            flex: 1;
+            min-width: 220px;
+            display: flex;
+            align-items: center;
+            border: 1px solid rgba(44, 82, 130, 0.25);
+            border-radius: 10px;
+            background: #fff;
+            padding: 0.35rem 0.75rem;
+            gap: 0.5rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        #converted-container .options .input-group:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+        }
+        #converted-container .options .input-group input {
+            border: none;
+            flex: 1;
+            min-width: 0;
+            padding: 0;
+            font-size: 0.95rem;
+            background: transparent;
+        }
+        #converted-container .options .input-group input:focus {
+            outline: none;
+        }
+        #converted-container .options .input-group .input-icon {
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+        #convertedScroll {
+            border-radius: 10px;
+            border: 1px solid rgba(44, 82, 130, 0.12);
+            background: linear-gradient(145deg, rgba(237, 242, 247, 0.45), #fff);
+        }
+        #convertedScroll table {
+            background: transparent;
+        }
         h1 {
             text-align: center;
             color: #1a253c;
@@ -93,6 +200,7 @@
             font-size: 1rem;
             cursor: pointer;
             transition: background-color 0.2s, box-shadow 0.2s;
+            touch-action: manipulation;
         }
         input[type="number"] { width: 120px; }
         button:hover, select:hover { background-color: #f9fafb; }
@@ -111,6 +219,8 @@
             margin: 1.2rem 0;
             font-weight: 500;
             color: var(--muted);
+            word-break: break-word;
+            padding: 0 4px;
         }
         .status.success { color: #166534; }
         .status.error { color: #b91c1c; }
@@ -123,12 +233,17 @@
             gap: 16px;
             margin-top: 1rem;
         }
+        #converted-container {
+            grid-column: 1 / -1;
+            width: 100%;
+            max-width: 100%;
+        }
         @media (max-width: 1100px) {
             .preview-container { grid-template-columns: 1fr; }
         }
 
         .preview {
-            width: 80vw;
+            width: 100%;
             max-height: 60vh;
             overflow: auto;               /* enables both vertical and horizontal scroll */
             -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
@@ -172,23 +287,69 @@
         .preview td[data-type="number"] { text-align: right; }
         .num { text-align: right; }
 
+        #tabs {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            width: 100%;
+        }
+        #tabs .tab {
+            flex: 0 1 auto;
+            min-width: 140px;
+        }
+
         /* Mobile controls */
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
             .controls, .options {
                 flex-direction: column;
                 align-items: stretch;
             }
             #tabs { flex-direction: row; }
+            #tabs .tab { flex: 1; min-width: 120px; }
             button, select, input[type="number"] {
                 width: 100%;
                 min-height: 44px;
             }
             #file-label { padding: .9rem; }
             .preview { max-height: 50vh; }
+            .panel-head { flex-direction: column; align-items: flex-start; gap: .5rem; }
+            .panel-actions { width: 100%; }
+            .panel-actions button { width: 100%; margin-left: 0; }
+            .options label {
+                width: 100%;
+            }
+            .options input,
+            .options select {
+                width: 100%;
+            }
+            #converted-container .options .input-group {
+                width: 100%;
+                min-width: 0;
+            }
+            .panel {
+                box-shadow: none;
+                border: 1px solid rgba(0,0,0,0.04);
+                border-radius: 10px;
+            }
+            #status {
+                text-align: left;
+                margin-top: 0.75rem;
+            }
+            #converted-container .panel-actions {
+                flex-direction: column;
+            }
+            #converted-container .panel-actions button {
+                width: 100%;
+                min-width: 0;
+            }
+            #converted-container .options {
+                gap: 0.5rem;
+                padding: 0.75rem;
+            }
         }
         
         /* Mobile responsive tweaks for the converted preview */
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           #dt-controls {
             flex-direction: column;
             gap: 8px;
@@ -197,6 +358,16 @@
             width: 100%;
             min-height: 44px;
           }
+        }
+
+        @media (max-width: 540px) {
+            .container { padding: 1.25rem; }
+            h1 { font-size: 1.5rem; }
+            .preview-container { gap: 12px; }
+            .tab { padding: 0.5rem 0.75rem; }
+            .panel { padding: 1rem 0.75rem; }
+            .panel-actions button { min-height: 42px; }
+            #status { font-size: 0.95rem; }
         }
     </style>
 </head>
@@ -250,7 +421,10 @@
                 <!-- Unified DataTable controls -->
                 <div id="dt-controls" class="options hidden" style="margin-top: .25rem;">
                     <label for="dtSearch">Search</label>
-                    <input type="text" id="dtSearch" placeholder="Type to search..." style="flex:1; min-width: 220px;">
+                    <div class="input-group">
+                        <span class="input-icon" aria-hidden="true">🔍</span>
+                        <input type="text" id="dtSearch" placeholder="Type to search...">
+                    </div>
                     <label for="dtFilterCol">in</label>
                     <select id="dtFilterCol"></select>
                     <label for="dtPageSize">Rows</label>
