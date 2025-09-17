@@ -202,9 +202,36 @@
             #file-label { padding: .9rem; }
             .preview { max-height: 50vh; }
         }
+        
+        /* Mobile responsive tweaks for the DataTables preview */
+        @media (max-width: 640px) {
+          /* Disable sticky/frozen columns on small screens to avoid overlap */
+          .preview td:first-child, .preview th:first-child,
+          .preview td:nth-child(2), .preview th:nth-child(2) {
+            position: static !important;
+            left: auto !important;
+            box-shadow: none !important;
+          }
+          /* Make controls stack vertically and enlarge touch targets */
+          #dt-controls {
+            flex-direction: column;
+            gap: 8px;
+          }
+          #dt-controls input, #dt-controls select, #dt-controls button {
+            width: 100%;
+            min-height: 44px;
+          }
+          /* Ensure DataTables uses full width and child rows show cleanly */
+          table.dataTable.display { width: 100% !important; }
+          table.dataTable.no-footer { border-bottom: 0; }
+          /* Buttons responsive wrapping */
+          .dt-buttons { display:flex; gap:8px; flex-wrap:wrap; }
+        }
     </style>
     <!-- Add jQuery and DataTables CSS from CDN -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
 </head>
 <body>
     <div class="container">
@@ -286,6 +313,10 @@
     <!-- Add jQuery and DataTables JS from CDN -->
     <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.colVis.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script> <!-- for csv export -->
     <script>
         // --- DOM Elements ---
         const fileInput = document.getElementById('fileInput');
@@ -450,6 +481,7 @@
             // Destroy existing DataTable if it exists
             if (dataTable) {
                 dataTable.destroy();
+                $('#convertedTable').remove();
                 dataTable = null;
             }
             convertedPreview.innerHTML = ''; // Clear previous content
@@ -468,22 +500,43 @@
             // Create the table structure required by DataTables
             const table = document.createElement('table');
             table.id = 'convertedTable';
-            table.className = 'display'; // Basic styling for DataTables
+            table.className = 'display nowrap'; // Basic styling for DataTables
             table.style.width = '100%';
             convertedPreview.appendChild(table);
 
-            // Prepare data for DataTables
-            const dataForTable = validData.map(row => currentHeaders.map(key => row[key]));
-            const columnsForTable = currentHeaders.map(key => ({ title: key.replace(/_/g, ' ') }));
+            // Build object-style data so columns can be referenced by name
+            const dataForTable = validData.map(row => {
+              const obj = {};
+              currentHeaders.forEach(k => { obj[k] = row[k]; });
+              return obj;
+            });
+
+            // Determine numeric columns for alignment
+            const numericFields = new Set(
+              currentHeaders.filter(h => /budget|forecast|variance|committed|certified|claim|amount|value/i.test(h))
+            );
+
+            // Build columns with responsive priorities
+            const columnsForTable = currentHeaders.map((key, idx) => ({
+              title: key.replace(/_/g, ' '),
+              data: key,
+              responsivePriority: idx < 3 ? 1 : (idx < 6 ? 2 : 10), // first 3 cols highest priority
+              className: numericFields.has(key) ? 'dt-body-right' : ''
+            }));
 
             // Initialize DataTables
             dataTable = new $('#convertedTable').DataTable({
                 data: dataForTable,
                 columns: columnsForTable,
+                responsive: true,
+                scrollX: true,
+                dom: 'Bfrtip', // buttons, filter, table, pagination
+                buttons: [
+                  { extend: 'colvis', text: 'Columns' },
+                  { extend: 'csvHtml5', text: 'Export CSV', filename: currentFileName.replace(/\.csv$/, '') }
+                ],
                 pageLength: parseInt(dtPageSize.value, 10) || 25,
-                searching: true,
-                // Hide the default controls so we can use our custom ones
-                dom: 'rt<"bottom"ip><"clear">',
+                order: [[1, 'asc']]
             });
 
             // Show our custom controls
@@ -556,51 +609,47 @@
 
         // DataTable control events
         dtSearch.addEventListener('input', (e) => {
-            if (dataTable) {
-                const colIndex = dtFilterCol.selectedIndex;
-                if (colIndex > 0) {
-                    // Search in a specific column (index 0 is "All columns")
-                    dataTable.column(colIndex - 1).search(e.target.value).draw();
-                } else {
-                    // Global search
-                    dataTable.search(e.target.value).draw();
-                }
+            if (!dataTable) return;
+            const q = e.target.value;
+            const colIndex = dtFilterCol.selectedIndex;
+            if (colIndex > 0) {
+              // dtFilterCol has first option "All columns" then headers; adjust index
+              dataTable.column(colIndex - 1).search(q).draw();
+            } else {
+              dataTable.search(q).draw();
             }
         });
         dtFilterCol.addEventListener('change', (e) => {
-            // Re-apply the search to the new column selection
-            if (dataTable) {
-                const colIndex = e.target.selectedIndex;
-                // Clear all column searches first
-                dataTable.columns().search('').draw();
-                if (colIndex > 0) {
-                    dataTable.column(colIndex - 1).search(dtSearch.value).draw();
-                } else {
-                    dataTable.search(dtSearch.value).draw();
-                }
+            if (!dataTable) return;
+            // clear all column searches
+            dataTable.columns().search('');
+            const colIndex = e.target.selectedIndex;
+            if (colIndex > 0) {
+              dataTable.column(colIndex - 1).search(dtSearch.value).draw();
+            } else {
+              dataTable.search(dtSearch.value).draw();
             }
         });
         dtPageSize.addEventListener('change', (e) => {
-            if (dataTable) {
-                dataTable.page.len(parseInt(e.target.value, 10) || 25).draw();
-            }
+            if (dataTable) dataTable.page.len(parseInt(e.target.value, 10) || 25).draw();
         });
         // dtPrev and dtNext are now handled by DataTables' own pagination controls
 
         // Export filtered subset
         exportFilteredBtn.addEventListener('click', () => {
-            if (!filteredConvertedData.length) { updateStatus('No filtered data to export.', 'error'); return; }
+            if (!dataTable) { updateStatus('No table available', 'error'); return; }
+            const rows = dataTable.rows({ search: 'applied' }).data().toArray(); // array of row objects
+            if (!rows.length) { updateStatus('No filtered data to export.', 'error'); return; }
+
             const headerString = currentHeaders.join(',');
-            const rows = filteredConvertedData.map(row =>
-                currentHeaders.map(key => {
-                    const value = row[key];
-                    if (value === null || typeof value === 'undefined') return '';
-                    const strValue = String(value);
-                    if (strValue.includes(',')) return `"${strValue.replace(/"/g, '""')}"`;
-                    return strValue;
-                }).join(',')
-            );
-            const csvContent = [headerString, ...rows].join('\n');
+            const csvRows = rows.map(r => currentHeaders.map(k => {
+              const v = r[k];
+              if (v === null || typeof v === 'undefined') return '';
+              const s = String(v);
+              return s.includes(',') ? `"${s.replace(/"/g, '""')}"` : s;
+            }).join(','));
+
+            const csvContent = [headerString, ...csvRows].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
