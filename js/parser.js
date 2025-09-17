@@ -136,8 +136,8 @@ function normalizeHeaderToken(token) {
     if (h === 'variance' || h === 'variance forecast' || h === 'forecast variance') return 'variance_forecast';
     if (h.includes('claim')) return 'additional_claim';
     if (h.includes('remark')) return 'remarks';
-    if (/(sep\-?25|september)/.test(h)) return 'additional_sep25';
-    if (/(jun\-?25|june)/.test(h)) return 'additional_jun25';
+    if (/(sep\-?25|september\s*2025|sep\s*2025)/.test(h)) return 'sep2025';
+    if (/(jun\-?25|june\s*2025|jun\s*2025)/.test(h)) return 'jun2025';
 
     // Fallback generic
     if (!h) return '';
@@ -150,19 +150,60 @@ function normalizeHeaderToken(token) {
  * - The first 'to_date' encountered after Budget columns is committed_to_date
  *   and the next 'to_date' is certified_to_date.
  */
-function deriveHeaderKeys(mainHeader) {
+function deriveHeaderKeys(mainHeader, parentHeader = []) {
     const keys = [];
     let toDateSeen = 0;
+    let lastVarianceMonth = null; // 'sep2025' | 'jun2025'
 
     // We detect budget columns to help ordering of "to date" fields.
     // We'll simply count original/revised occurrences we pass; not strictly required.
-    mainHeader.forEach((cell) => {
+    mainHeader.forEach((cell, i) => {
         const k = normalizeHeaderToken(cell);
+        const parent = String(parentHeader[i] || '').trim().toLowerCase();
+
         if (k === 'to_date') {
-            toDateSeen += 1;
-            keys.push(toDateSeen === 1 ? 'committed_to_date' : 'certified_to_date');
+            // Prefer explicit parent (Committed/Certified) if present; else fallback by order
+            if (parent.includes('commit')) keys.push('committed_to_date');
+            else if (parent.includes('cert')) keys.push('certified_to_date');
+            else {
+                toDateSeen += 1;
+                keys.push(toDateSeen === 1 ? 'committed_to_date' : 'certified_to_date');
+            }
+        } else if (k === 'final_forecast') {
+            // Only treat as final forecast when parent indicates Final; if Variance, map accordingly
+            if (parent.includes('final')) keys.push('Final_Forecast');
+            else if (parent.includes('variance')) keys.push('Variance_Forecast');
+            else keys.push('Forecast');
+        } else if (k === 'sep2025' || k === 'jun2025') {
+            // Variance months have two sub-columns: value then remarks
+            if (parent.includes('variance')) {
+                if (k === 'sep2025') { keys.push('Variance_Sep2025_Value'); lastVarianceMonth = 'sep2025'; }
+                else { keys.push('Variance_Jun2025_Value'); lastVarianceMonth = 'jun2025'; }
+            } else {
+                // If such month appears outside Variance, just push a normalized label
+                keys.push(k === 'sep2025' ? 'Sep2025' : 'Jun2025');
+            }
         } else if (k) {
-            keys.push(k);
+            // Direct mapped or generic key
+            // If parent says Variance and child is Remarks, qualify it
+            if (k === 'remarks' && parent.includes('variance')) {
+                if (lastVarianceMonth === 'sep2025') keys.push('Variance_Sep2025_Remarks');
+                else if (lastVarianceMonth === 'jun2025') keys.push('Variance_Jun2025_Remarks');
+                else keys.push('Variance_Remarks');
+            } else {
+                // map common fields to final display keys
+                if (k === 'item_code') keys.push('Item_Code');
+                else if (k === 'item_description') keys.push('Item_Description');
+                else if (k === 'budget_original') keys.push('Budget_Original');
+                else if (k === 'budget_revised') keys.push('Budget_Revised');
+                else if (k === 'committed_to_date') keys.push('Committed_To_Date');
+                else if (k === 'certified_to_date') keys.push('Certified_To_Date');
+                else if (k === 'forecast') keys.push('Forecast');
+                else if (k === 'variance_forecast') keys.push('Variance_Forecast');
+                else if (k === 'final_forecast') keys.push('Final_Forecast');
+                else if (k === 'additional_claim') keys.push('Additional_Claim');
+                else keys.push('');
+            }
         } else {
             keys.push('');
         }
@@ -176,10 +217,10 @@ function deriveHeaderKeys(mainHeader) {
             seen.add(k);
             return k;
         }
-        // For duplicate remarks, create remarks_2
-        if (k === 'remarks' && !seen.has('remarks_2')) {
-            seen.add('remarks_2');
-            return 'remarks_2';
+        // Allow duplicate variance remarks to map to Jun after Sep
+        if (k === 'Variance_Sep2025_Remarks' && !seen.has('Variance_Jun2025_Remarks')) {
+            seen.add('Variance_Jun2025_Remarks');
+            return 'Variance_Jun2025_Remarks';
         }
         // For unexpected dups, keep the original raw token with suffix to avoid collisions
         let idx = 2;
@@ -246,8 +287,8 @@ function parseCsvData(csvData, manualHeaderRow = null) {
     const mainHeader = arrays[headerIndex] || [];
     const parentHeader = parentHeaderIndex >= 0 ? arrays[parentHeaderIndex] : [];
 
-    // Derive canonical header keys from the main header row (avoid using parent carry-forward on CSV)
-    const headerKeys = deriveHeaderKeys(mainHeader);
+    // Derive final display header keys using both parent and child rows
+    const headerKeys = deriveHeaderKeys(mainHeader, parentHeader);
 
     const jsonData = [];
     const dataRows = arrays.slice(headerIndex + 1);
@@ -260,13 +301,17 @@ function parseCsvData(csvData, manualHeaderRow = null) {
 
         const rowData = {};
         headerKeys.forEach((key, i) => {
+            if (!key) return;
             rowData[key] = normalizeCellValue(row[i]);
         });
 
-        // A row is a data row if its item_code is not an integer (section headers are 1,2,3,...).
-        if (typeof rowData['item_code'] === 'number' && rowData['item_code'] % 1 !== 0) {
-            jsonData.push(rowData);
-        }
+        // Keep item detail rows; skip group headers like 1, 2, 3...
+        const code = rowData['Item_Code'] ?? rowData['item_code'];
+        const isDataRow = (
+            (typeof code === 'number' && !Number.isInteger(code)) ||
+            (typeof code === 'string' && /^(\d+\.)+\d+$/.test(code.trim()))
+        );
+        if (isDataRow) jsonData.push(rowData);
     });
 
     // Add project metadata to each row using robust scan
@@ -276,13 +321,70 @@ function parseCsvData(csvData, manualHeaderRow = null) {
     const month = meta.month;
 
     const enrichedData = jsonData.map(row => ({
-        project,
-        project_code: projectCode,
-        month,
+        Project: project,
         ...row
     }));
 
-    const finalHeaders = ['project', 'project_code', 'month', ...headerKeys.filter(k => k)];
+    // Enforce expected column order and limit
+    const desiredOrder = [
+        'Project',
+        'Item_Code',
+        'Item_Description',
+        'Budget_Original',
+        'Budget_Revised',
+        'Committed_To_Date',
+        'Certified_To_Date',
+        'Forecast',
+        'Final_Forecast',
+        'Variance_Sep2025_Value',
+        'Variance_Sep2025_Remarks',
+        'Variance_Jun2025_Value',
+        'Variance_Jun2025_Remarks',
+        'Additional_Claim'
+    ];
 
-    return { headers: finalHeaders, data: enrichedData, raw: arrays };
+    // Project rows onto desired shape
+    const projectedData = enrichedData.map(row => {
+        const out = {};
+        for (const k of desiredOrder) out[k] = k in row ? row[k] : null;
+        return out;
+    });
+
+    return { headers: desiredOrder, data: projectedData, raw: arrays };
+}
+
+/**
+ * Converts the wide records to long format (tidy data) for analysis.
+ * Each metric becomes a separate row with columns: project, project_code, month,
+ * item_code, item_description, metric, value.
+ * @param {Object[]} records - The wide rows returned by parseCsvData().data
+ * @param {string[]} [measures] - Optional list of measure keys to unpivot.
+ * @returns {Object[]} longRows
+ */
+function toLongFormat(records, measures) {
+    if (!Array.isArray(records) || records.length === 0) return [];
+    const sample = records[0];
+    const defaultMeasures = [
+        'Budget_Original', 'Budget_Revised',
+        'Committed_To_Date', 'Certified_To_Date',
+        'Forecast', 'Final_Forecast',
+        'Variance_Sep2025_Value', 'Variance_Sep2025_Remarks',
+        'Variance_Jun2025_Value', 'Variance_Jun2025_Remarks',
+        'Additional_Claim'
+    ].filter(k => k in sample);
+    const metrics = Array.isArray(measures) && measures.length ? measures : defaultMeasures;
+    const out = [];
+    for (const row of records) {
+        for (const m of metrics) {
+            if (!(m in row)) continue;
+            out.push({
+                project: row.Project,
+                item_code: row.Item_Code,
+                item_description: row.Item_Description,
+                metric: m,
+                value: row[m]
+            });
+        }
+    }
+    return out;
 }

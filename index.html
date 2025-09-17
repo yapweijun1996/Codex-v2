@@ -5,10 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Excel & CSV Parser</title>
     <style>
+        /* Light-only design tokens */
+        :root {
+            --bg: #f6f8fb;
+            --panel: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --primary: #2c5282;
+            --primary-600: #2a4365;
+            --accent: #edf2f7;
+            --zebra: #fafafa;
+            --sticky: #ffffff;
+            --frozen-col-1: 160px; /* default; can be overridden per table */
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f7f9;
-            color: #333;
+            background-color: var(--bg);
+            color: var(--text);
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -20,7 +35,7 @@
         .container {
             width: 100%;
             max-width: 1400px;
-            background: #fff;
+            background: var(--panel);
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -32,9 +47,9 @@
         }
         .controls, .options {
             display: flex;
-            gap: 1rem;
+            gap: .75rem;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             flex-wrap: wrap;
         }
         .options { font-size: 0.9rem; }
@@ -42,7 +57,7 @@
         #file-label {
             flex-grow: 1;
             padding: 1rem;
-            border: 2px dashed #cdd3d9;
+            border: 2px dashed var(--border);
             border-radius: 6px;
             text-align: center;
             cursor: pointer;
@@ -56,11 +71,11 @@
         #file-name {
             margin-left: 10px;
             font-style: italic;
-            color: #555;
+            color: var(--muted);
         }
         button, select, input[type="number"] {
             padding: 0.75rem 1.5rem;
-            border: 1px solid #cdd3d9;
+            border: 1px solid var(--border);
             border-radius: 6px;
             background-color: #fff;
             font-size: 1rem;
@@ -70,52 +85,101 @@
         input[type="number"] { width: 120px; }
         button:hover, select:hover { background-color: #f9fafb; }
         button#parseBtn {
-            background-color: #2c5282;
+            background-color: var(--primary);
             color: white;
-            border-color: #2c5282;
+            border-color: var(--primary);
         }
-        button#parseBtn:hover { background-color: #2a4365; }
+        button#parseBtn:hover { background-color: var(--primary-600); }
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
         #status {
             text-align: center;
-            margin: 1.5rem 0;
+            margin: 1.2rem 0;
             font-weight: 500;
+            color: var(--muted);
         }
-        .status.info { color: #4a5568; }
-        .status.success { color: #2f855a; }
-        .status.error { color: #c53030; }
+        .status.success { color: #166534; }
+        .status.error { color: #b91c1c; }
         .hidden { display: none; }
+
+        /* Responsive preview layout */
         .preview-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 16px;
             margin-top: 1rem;
         }
+        @media (max-width: 1100px) {
+            .preview-container { grid-template-columns: 1fr; }
+        }
+
         .preview {
-            max-height: 500px;
-            overflow: auto;
-            border: 1px solid #ddd;
-            padding: 10px;
-            border-radius: 6px;
+            max-height: 60vh;
+            overflow: auto;               /* enables both vertical and horizontal scroll */
+            -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
+            border: 1px solid var(--border);
+            padding: 0;
+            border-radius: 8px;
+            background: var(--panel);
         }
         .preview table {
-            border-collapse: collapse;
-            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            width: max-content;            /* grow to content width to allow horizontal scroll */
+            min-width: 100%;               /* but never smaller than the container */
+            table-layout: auto;            /* natural column widths */
+            font-variant-numeric: tabular-nums;
         }
         .preview th, .preview td {
-            border: 1px solid #ccc;
-            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+            padding: 8px 10px;
             text-align: left;
             font-size: 0.9rem;
-            white-space: nowrap;
+            white-space: nowrap;           /* keep cells on a single line */
+            background: var(--panel);
         }
         .preview th {
-            background-color: #edf2f7;
+            background-color: var(--accent);
             position: sticky;
             top: 0;
+            z-index: 2;
+        }
+        .preview tbody tr:nth-child(even) td { background: var(--zebra); }
+
+        /* Freeze first and second columns for context */
+        .preview td:first-child, .preview th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            background: var(--sticky);
+            box-shadow: 1px 0 0 var(--border);
+            min-width: var(--frozen-col-1);
+        }
+        .preview td:nth-child(2), .preview th:nth-child(2) {
+            position: sticky;
+            left: var(--frozen-col-1);
+            z-index: 1;
+            background: var(--sticky);
+            box-shadow: 1px 0 0 var(--border);
+        }
+
+        /* Right alignment for numeric cells when flagged */
+        .preview td[data-type="number"] { text-align: right; }
+
+        /* Mobile controls */
+        @media (max-width: 640px) {
+            .controls, .options {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            button, select, input[type="number"] {
+                width: 100%;
+                min-height: 44px;
+            }
+            #file-label { padding: .9rem; }
+            .preview { max-height: 50vh; }
         }
     </style>
 </head>
@@ -245,6 +309,14 @@
             });
             rawPreview.innerHTML = '';
             rawPreview.appendChild(table);
+            // Set sticky offset for raw table's second column based on first column width
+            try {
+                const firstHeaderCell = table.rows[0] && table.rows[0].cells[0];
+                if (firstHeaderCell) {
+                    const w = firstHeaderCell.getBoundingClientRect().width;
+                    table.style.setProperty('--frozen-col-1', `${Math.ceil(w)}px`);
+                }
+            } catch (e) { /* noop */ }
             rawContainer.classList.remove('hidden');
         }
 
@@ -272,12 +344,26 @@
                 const row = tbody.insertRow();
                 currentHeaders.forEach(key => {
                     const cell = row.insertCell();
-                    cell.textContent = rowData[key] !== null && typeof rowData[key] !== 'undefined' ? rowData[key] : '';
+                    const value = rowData[key];
+                    cell.textContent = value !== null && typeof value !== 'undefined' ? value : '';
+                    const asStr = String(value ?? '');
+                    // mark numeric-looking cells for right alignment
+                    if (asStr !== '' && !isNaN(parseFloat(asStr)) && isFinite(Number(asStr))) {
+                        cell.setAttribute('data-type', 'number');
+                    }
                 });
             });
 
             convertedPreview.innerHTML = '';
             convertedPreview.appendChild(table);
+            // Dynamically set sticky offset for the second column based on first column width
+            try {
+                const firstHeaderCell = table.tHead && table.tHead.rows[0] && table.tHead.rows[0].cells[0];
+                if (firstHeaderCell) {
+                    const w = firstHeaderCell.getBoundingClientRect().width;
+                    table.style.setProperty('--frozen-col-1', `${Math.ceil(w)}px`);
+                }
+            } catch (e) { /* noop */ }
             convertedContainer.classList.remove('hidden');
         }
 
